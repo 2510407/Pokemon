@@ -3,27 +3,87 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Monster Master - All Code</title>
+    <title>Monster Master - Home</title>
+    <link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <style>
+        :root {
+            --primary-gold: linear-gradient(to bottom, #ffd700, #ff8c00);
+            --bg-color: radial-gradient(circle, #fdfdfd 0%, #e0e0e2 100%);
+            --panel-bg: rgba(255, 255, 255, 0.9);
+        }
+
         body {
             margin: 0; padding: 0;
-            background: radial-gradient(circle, #fdfdfd 0%, #e0e0e2 100%);
+            background: var(--bg-color);
             height: 100vh; display: flex; flex-direction: column;
-            font-family: 'Malgun Gothic', sans-serif; overflow: hidden;
+            font-family: 'Jua', sans-serif; /* 게임용 폰트 적용 */
+            overflow: hidden;
+            user-select: none;
         }
 
         /* --- 상단 레이아웃 --- */
         .top-nav {
-            display: flex; justify-content: space-between; padding: 20px;
+            display: flex; justify-content: space-between; align-items: flex-start;
+            padding: 25px; width: 100%; box-sizing: border-box;
         }
 
         .profile-card {
-            display: flex; align-items: center; background: white;
-            padding: 10px 25px; border-radius: 50px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            display: flex; align-items: center;
+            background: var(--panel-bg);
+            border: 2px solid #fff; border-radius: 50px;
+            padding: 8px 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);
         }
 
-        /* --- 하단 레이아웃 (핵심 수정 부분) --- */
+        .avatar {
+            width: 45px; height: 45px;
+            background: linear-gradient(135deg, #ffcfd2, #d1e3ff);
+            border-radius: 50%; border: 2px solid #fff;
+            margin-right: 12px;
+        }
+
+        .currency { display: flex; gap: 10px; margin-left: 15px; }
+
+        .currency-item {
+            display: flex; align-items: center; gap: 5px;
+            background: #eee; padding: 5px 15px; border-radius: 20px;
+            font-weight: bold; font-size: 16px;
+        }
+
+        .settings-btn {
+            width: 50px; height: 50px;
+            background: var(--panel-bg);
+            border-radius: 50%; border: 2px solid #fff;
+            display: flex; justify-content: center; align-items: center;
+            cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            transition: transform 0.3s;
+        }
+        .settings-btn:hover { transform: rotate(90deg); }
+        .settings-btn i { color: #666; font-size: 32px; }
+
+        /* --- 새소식 배너 --- */
+        .news-container {
+            position: absolute; top: 100px; right: 25px;
+            width: 320px; background: var(--panel-bg);
+            border-radius: 15px; border: 2px solid #fff;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+            overflow: hidden;
+        }
+        .news-header {
+            background: #4a90e2; color: white; padding: 10px 15px;
+            font-size: 16px;
+        }
+        .news-content { padding: 15px; font-size: 14px; color: #444; line-height: 1.4; }
+
+        /* --- 중앙 메인 영역 --- */
+        .main-stage { flex: 1; display: flex; justify-content: center; align-items: center; }
+        .monster-spot {
+            width: 300px; height: 80px;
+            background: rgba(0,0,0,0.05); border-radius: 50%;
+            filter: blur(15px);
+        }
+
+        /* --- 하단 레이아웃 (핵심 수정) --- */
         .bottom-container {
             position: absolute; bottom: 0; left: 0; width: 100%;
             display: flex; justify-content: space-between; align-items: flex-end;
@@ -32,24 +92,26 @@
 
         .left-menus { display: flex; gap: 20px; }
 
-        /* 일반 버튼 스타일 */
-        .btn-circle {
-            width: 80px; height: 80px; background: #4da3ff; border: 4px solid #fff;
+        /* 소형 버튼 (상점, 인벤토리) */
+        .btn-small {
+            width: 85px; height: 85px; background: #4da3ff; border: 4px solid #fff;
             border-radius: 20px; color: white; display: flex; flex-direction: column;
             justify-content: center; align-items: center; cursor: pointer;
-            box-shadow: 0 6px 0 #0052cc; transition: 0.1s;
+            box-shadow: 0 7px 0 #0052cc; transition: all 0.1s;
         }
-        .btn-circle:active { transform: translateY(4px); box-shadow: 0 2px 0 #0052cc; }
+        .btn-small.gray { background: #9b9b9b; box-shadow: 0 7px 0 #555; }
+        .btn-small:active { transform: translateY(4px); box-shadow: 0 3px 0 #0052cc; }
+        .btn-small span { font-size: 14px; margin-top: 5px; }
 
-        /* 🔥 거대한 전투 시작 버튼 (기존의 3배) */
+        /* 🔥 거대 전투 시작 버튼 (3배 크기 & 우하단 배치) */
         .btn-battle-huge {
-            width: 450px; height: 120px; /* 크기 대폭 확장 */
-            background: linear-gradient(to bottom, #ffcc00, #ff8800);
-            border: 6px solid #fff; border-radius: 60px;
-            color: white; font-size: 42px; font-weight: 900;
+            width: 500px; height: 130px; 
+            background: var(--primary-gold);
+            border: 6px solid #fff; border-radius: 100px;
+            color: white; font-size: 50px; font-weight: 900;
             display: flex; justify-content: center; align-items: center;
-            cursor: pointer; text-shadow: 0 3px 6px rgba(0,0,0,0.3);
-            box-shadow: 0 12px 0 #cc6600, 0 20px 30px rgba(0,0,0,0.2);
+            cursor: pointer; text-shadow: 0 3px 6px rgba(0,0,0,0.2);
+            box-shadow: 0 12px 0 #cc6600, 0 20px 40px rgba(0,0,0,0.2);
             transition: all 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
 
@@ -59,35 +121,47 @@
             box-shadow: 0 2px 0 #cc6600; 
         }
 
-        /* 버튼 내부 아이콘/텍스트 간격 */
-        .btn-battle-huge i { font-size: 50px; margin-right: 15px; }
-
     </style>
 </head>
 <body>
 
     <header class="top-nav">
         <div class="profile-card">
-            <div style="font-weight: 900;">주인님</div>
-            <div style="margin-left: 15px; color: #f39c12;">💰 12,500</div>
+            <div class="avatar"></div>
+            <div style="font-size: 1.4rem; color: #333;">주인님</div>
+            <div class="currency">
+                <div class="currency-item" style="color: #f39c12;"><i class="material-icons">payments</i> 12,500</div>
+                <div class="currency-item" style="color: #3498db;"><i class="material-icons">diamond</i> 320</div>
+            </div>
         </div>
+        <button class="settings-btn">
+            <i class="material-icons">settings</i>
+        </button>
     </header>
+
+    <div class="news-container">
+        <div class="news-header">📜 새소식</div>
+        <div class="news-content">새로운 드래곤 업데이트!<br>지금 상점에서 확인하세요.</div>
+    </div>
+
+    <main class="main-stage">
+        <div class="monster-spot"></div>
+    </main>
 
     <div class="bottom-container">
         <div class="left-menus">
-            <div class="btn-circle">
-                <i class="material-icons">shopping_bag</i>
-                <span style="font-size: 12px;">상점</span>
+            <div class="btn-small">
+                <i class="material-icons" style="font-size: 35px;">shopping_bag</i>
+                <span>상점</span>
             </div>
-            <div class="btn-circle" style="background: #9b9b9b; box-shadow: 0 6px 0 #555;">
-                <i class="material-icons">style</i>
-                <span style="font-size: 12px;">덱</span>
+            <div class="btn-small gray">
+                <i class="material-icons" style="font-size: 35px;">style</i>
+                <span>인벤토리</span>
             </div>
         </div>
 
         <div class="btn-battle-huge">
-            <i class="material-icons">crossed_swords</i>
-            <span>전투 시작</span>
+            <span>전투 시작 !</span>
         </div>
     </div>
 
