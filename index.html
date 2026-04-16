@@ -3,15 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Monster Master - Online v3.7</title>
+    <title>Monster Master - Online v3.8.2</title>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, doc, onSnapshot, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-        // 주인님의 Firebase 설정
         const firebaseConfig = {
             apiKey: "AIzaSyDb2Fh9FHOe7Is0BAoaVDojFJvs8XUgJcg",
             authDomain: "pokemon-fa8e3.firebaseapp.com",
@@ -27,34 +26,63 @@
         const db = getFirestore(app);
         const provider = new GoogleAuthProvider();
 
-        // DOM 요소 연결
         const profileCard = document.getElementById('profile-card');
         const userNameDisp = document.getElementById('user-name');
+        const timerDisp = document.getElementById('nickname-timer');
         const goldDisp = document.getElementById('gold-count');
         const gemDisp = document.getElementById('gem-count');
         const onlineDot = document.getElementById('online-dot');
 
-        // 로그인 함수
-        async function login() {
-            try {
-                await signInWithPopup(auth, provider);
-            } catch (error) {
-                console.error("로그인 실패:", error);
-                alert("로그인 중 오류가 발생했습니다.");
+        // 남은 시간 계산 함수
+        function getRemainingTime(lastChanged) {
+            if (!lastChanged) return 0;
+            const now = new Date();
+            const diff = 86400000 - (now - lastChanged.toDate()); 
+            return diff > 0 ? diff : 0;
+        }
+
+        // 이름 변경 함수
+        async function changeNickname(user) {
+            const userRef = doc(db, "users", user.uid);
+            const docSnap = await getDoc(userRef);
+            const data = docSnap.data();
+            
+            const remaining = getRemainingTime(data.lastNicknameChange);
+
+            if (remaining > 0) {
+                const hours = Math.floor(remaining / (1000 * 60 * 60));
+                const mins = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
+                alert(`아직은 바꿀 수 없어요!\n${hours}시간 ${mins}분 후에 다시 시도해 주세요.`);
+                return;
+            }
+
+            const newName = prompt("새로운 닉네임을 입력하세요 (최대 8자):");
+            if (newName && newName.trim().length > 0) {
+                if (newName.length > 8) {
+                    alert("닉네임은 8자 이내로 설정해 주세요!");
+                    return;
+                }
+                await setDoc(userRef, { 
+                    name: newName, 
+                    lastNicknameChange: new Date() 
+                }, { merge: true });
+                alert(`닉네임이 '${newName}'으로 변경되었습니다!`);
             }
         }
 
-        // 로그인 상태 및 데이터 실시간 연동
+        async function login() {
+            try { await signInWithPopup(auth, provider); } 
+            catch (error) { console.error("로그인 실패:", error); }
+        }
+
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 onlineDot.style.background = "#4caf50";
-                userNameDisp.innerText = user.displayName;
+                profileCard.onclick = () => changeNickname(user);
 
                 const userRef = doc(db, "users", user.uid);
-                
                 onSnapshot(userRef, async (docSnap) => {
                     if (!docSnap.exists()) {
-                        // 신규 유저 보상 지급 (최초 1회)
                         await setDoc(userRef, {
                             name: user.displayName,
                             gold: 10000,
@@ -63,21 +91,29 @@
                             inventory: ["card_001"]
                         });
                     } else {
-                        // 기존 유저 데이터 불러오기
                         const data = docSnap.data();
+                        userNameDisp.innerText = data.name;
                         goldDisp.innerText = data.gold.toLocaleString();
                         gemDisp.innerText = data.gem.toLocaleString();
+
+                        // 쿨타임 실시간 표시
+                        const remaining = getRemainingTime(data.lastNicknameChange);
+                        if (remaining > 0) {
+                            timerDisp.style.display = 'block';
+                            const hours = Math.floor(remaining / (1000 * 60 * 60));
+                            timerDisp.innerText = `${hours}h 후에 변경 가능`;
+                        } else {
+                            timerDisp.style.display = 'none';
+                        }
                     }
                 });
             } else {
                 onlineDot.style.background = "#bbb";
                 userNameDisp.innerText = "로그인 하세요";
-                goldDisp.innerText = "0";
-                gemDisp.innerText = "0";
+                timerDisp.style.display = 'none';
+                profileCard.onclick = login;
             }
         });
-
-        profileCard.addEventListener('click', login);
     </script>
 
     <style>
@@ -91,39 +127,32 @@
             --bg-color: #f7fafe;
             --panel-bg: rgba(255, 255, 255, 0.95);
             --glass-blur: blur(10px);
-            --border-style: 1px solid rgba(255, 255, 255, 0.8);
             --strong-shadow: 0 15px 45px rgba(0, 0, 0, 0.12);
             --main-font: 'Presentation', sans-serif;
             --battle-blue: #81d4fa; 
         }
 
         body {
-            margin: 0; padding: 0; background-color: var(--bg-color);
+            margin: 0; background-color: var(--bg-color);
             height: 100vh; display: flex; flex-direction: column;
             font-family: var(--main-font); overflow: hidden; user-select: none;
         }
 
         .card-panel {
             background-color: var(--panel-bg); backdrop-filter: var(--glass-blur);
-            border: var(--border-style); border-radius: 22px; box-shadow: var(--strong-shadow);
+            border-radius: 22px; box-shadow: var(--strong-shadow);
             cursor: pointer; transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             display: flex; flex-direction: column; align-items: center; justify-content: center;
+            border: 1px solid rgba(255, 255, 255, 0.8);
         }
         .card-panel:hover { transform: translateY(-5px); box-shadow: 0 20px 55px rgba(0, 0, 0, 0.15); }
-        .card-panel:active { transform: scale(0.95); }
 
-        /* 상단 레이아웃 */
         .top-nav { display: flex; justify-content: space-between; align-items: flex-start; padding: 30px; width: 100%; box-sizing: border-box; }
         
-        .profile-card { 
-            flex-direction: row; gap: 18px; padding: 12px 30px; border-radius: 60px; position: relative;
-        }
-        /* 온라인 상태 점 */
-        .online-dot {
-            width: 12px; height: 12px; background: #bbb; border-radius: 50%;
-            position: absolute; left: 15px; top: 50%; transform: translateY(-50%);
-            border: 2px solid white;
-        }
+        .profile-card { flex-direction: row; gap: 15px; padding: 12px 30px; border-radius: 60px; position: relative; }
+        .profile-card:hover #user-name { color: var(--battle-blue); text-decoration: underline; }
+        
+        .online-dot { width: 12px; height: 12px; background: #bbb; border-radius: 50%; position: absolute; left: 15px; top: 50%; transform: translateY(-50%); border: 2px solid white; }
 
         .top-right-group { display: flex; flex-direction: column; align-items: flex-end; gap: 15px; }
         .settings-btn { width: 60px; height: 60px; border-radius: 50%; }
@@ -134,22 +163,15 @@
         .news-header { font-size: 1.2rem; color: #222; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
         .news-content { font-size: 1rem; color: #555; font-weight: 400; line-height: 1.5; }
 
-        /* 중앙 스테이지 */
         .main-stage { flex: 1; display: flex; justify-content: center; align-items: center; }
         .monster-spot { width: 350px; height: 120px; background: rgba(0,0,0,0.04); border-radius: 50%; filter: blur(20px); }
 
-        /* 하단 레이아웃 */
-        .bottom-container {
-            position: absolute; bottom: 0; left: 0; width: 100%;
-            display: flex; justify-content: space-between; align-items: flex-end;
-            padding: 50px; box-sizing: border-box;
-        }
+        .bottom-container { position: absolute; bottom: 0; left: 0; width: 100%; display: flex; justify-content: space-between; align-items: flex-end; padding: 50px; box-sizing: border-box; }
         .left-menus { display: flex; gap: 20px; }
         .btn-small { width: 100px; height: 100px; }
         .btn-small i { font-size: 40px; color: #444; margin-bottom: 5px; }
         .btn-small span { font-size: 1.2rem; color: #333; }
 
-        /* 🔥 하얀 테두리 배틀 버튼 */
         .btn-battle-huge {
             width: 520px; height: 130px; background-color: var(--battle-blue); 
             border: 8px solid #ffffff; border-radius: 70px;
@@ -166,8 +188,11 @@
     <header class="top-nav">
         <div class="card-panel profile-card" id="profile-card">
             <div id="online-dot" class="online-dot"></div>
-            <div id="user-name" style="font-size: 1.6rem; color: #111; margin-left: 10px;">로그인 하세요</div>
-            <div style="display: flex; gap: 15px; font-size: 1.2rem;">
+            <div style="display: flex; flex-direction: column; margin-left: 10px;">
+                <div id="user-name" style="font-size: 1.6rem; color: #111;">로그인 하세요</div>
+                <div id="nickname-timer" style="font-size: 0.75rem; color: #ff5252; display: none;"></div>
+            </div>
+            <div style="display: flex; gap: 15px; font-size: 1.2rem; margin-left: 10px;">
                 <span style="color: #d35400;">💰 <span id="gold-count">0</span></span>
                 <span style="color: #2980b9;">💎 <span id="gem-count">0</span></span>
             </div>
@@ -179,7 +204,7 @@
             </div>
             <div class="card-panel news-card">
                 <div class="news-header"><i class="material-icons" style="font-size: 20px; color: #f39c12;">notifications</i> 새소식</div>
-                <div class="news-content">Firebase 서버 연결 완료!<br>이제 온라인 데이터가 저장됩니다.</div>
+                <div class="news-content">닉네임 변경 기능 추가!<br>24시간마다 새로운 이름으로!</div>
             </div>
         </div>
     </header>
