@@ -3,61 +3,154 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Monster Card Game</title>
+    <title>Monster Master - Home</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <style>
-        body {
-            margin: 0; padding: 0;
-            background: radial-gradient(circle, #fdfdfd 0%, #e0e0e2 100%);
-            height: 100vh; display: flex; flex-direction: column;
-            font-family: 'Noto Sans KR', sans-serif; overflow: hidden;
+        :root {
+            --primary-gold: linear-gradient(to bottom, #ffd700, #ff8c00);
+            --bg-color: radial-gradient(circle, #fdfdfd 0%, #e0e0e2 100%);
+            --panel-bg: rgba(255, 255, 255, 0.9);
         }
 
-        /* 상단 바 */
+        body {
+            margin: 0; padding: 0;
+            background: var(--bg-color);
+            height: 100vh; display: flex; flex-direction: column;
+            font-family: 'Malgun Gothic', sans-serif; overflow: hidden;
+            user-select: none;
+        }
+
+        /* --- 상단 프로필 영역 --- */
         .top-nav {
             display: flex; justify-content: space-between; align-items: flex-start;
             padding: 20px; width: 100%; box-sizing: border-box;
         }
-        .profile-bar img { width: 320px; filter: drop-shadow(0 4px 4px rgba(0,0,0,0.1)); }
-        .top-right { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
-        .settings-btn img { width: 45px; cursor: pointer; transition: transform 0.2s; }
-        .news-banner img { width: 350px; border-radius: 10px; }
 
-        /* 중앙 영역 (캐릭터 실루엣은 나중에 추가 가능) */
-        .main-character { flex: 1; display: flex; justify-content: center; align-items: center; }
+        .profile-card {
+            display: flex; align-items: center;
+            background: var(--panel-bg);
+            border: 2px solid #fff; border-radius: 50px;
+            padding: 8px 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
 
-        /* 하단 버튼 */
+        .avatar {
+            width: 45px; height: 45px;
+            background: linear-gradient(135deg, #ffcfd2, #d1e3ff);
+            border-radius: 50%; border: 2px solid #fff;
+            margin-right: 12px;
+        }
+
+        .currency {
+            display: flex; gap: 10px; margin-left: 15px;
+        }
+
+        .currency-item {
+            display: flex; align-items: center; gap: 5px;
+            background: #eee; padding: 3px 12px; border-radius: 20px;
+            font-weight: bold; font-size: 14px;
+        }
+
+        .settings-btn {
+            width: 45px; height: 45px;
+            background: var(--panel-bg);
+            border-radius: 50%; border: none;
+            display: flex; justify-content: center; align-items: center;
+            cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            transition: transform 0.3s;
+        }
+        .settings-btn:hover { transform: rotate(90deg); }
+        .settings-btn i { color: #666; font-size: 28px; }
+
+        /* --- 중앙 새소식 배너 --- */
+        .news-container {
+            position: absolute; top: 85px; right: 20px;
+            width: 300px; background: var(--panel-bg);
+            border-radius: 15px; border: 2px solid #fff;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+            overflow: hidden;
+        }
+        .news-header {
+            background: #4a90e2; color: white; padding: 8px 15px;
+            font-size: 14px; font-weight: bold;
+        }
+        .news-content { padding: 15px; font-size: 13px; color: #444; }
+
+        /* --- 중앙 메인 영역 --- */
+        .main-stage { flex: 1; display: flex; justify-content: center; align-items: center; }
+        .monster-spot {
+            width: 250px; height: 250px;
+            background: rgba(0,0,0,0.03); border-radius: 50%;
+            filter: blur(20px);
+        }
+
+        /* --- 하단 메뉴 버튼 --- */
         .bottom-menu {
             display: flex; justify-content: center; align-items: flex-end;
-            gap: 15px; padding-bottom: 40px;
+            gap: 20px; padding-bottom: 50px;
         }
-        .menu-btn { cursor: pointer; transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-        .menu-btn:hover { transform: scale(1.05) translateY(-5px); }
-        .menu-btn:active { transform: scale(0.95); }
-        .menu-btn img { display: block; filter: drop-shadow(0 6px 8px rgba(0,0,0,0.15)); }
 
-        /* 이미지 크기 미세 조정 */
-        .shop-btn img { width: 200px; }
-        .deck-btn img { width: 200px; }
-        .battle-btn img { width: 300px; }
+        .btn {
+            border: 4px solid #fff; border-radius: 20px;
+            cursor: pointer; display: flex; flex-direction: column; align-items: center;
+            padding: 15px 30px; transition: all 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            font-weight: bold; color: white; text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .btn i { font-size: 35px; margin-bottom: 5px; }
+
+        .btn-shop { background: #4da3ff; box-shadow: 0 8px 0 #0052cc; }
+        .btn-deck { background: #9b9b9b; box-shadow: 0 8px 0 #555; }
+        .btn-battle { 
+            background: var(--primary-gold); box-shadow: 0 8px 0 #cc7000;
+            padding: 20px 60px; font-size: 22px; border-radius: 50px;
+        }
+
+        .btn:hover { transform: translateY(-5px) scale(1.05); }
+        .btn:active { transform: translateY(6px); box-shadow: 0 2px 0 transparent; }
+
     </style>
 </head>
 <body>
 
     <header class="top-nav">
-        <div class="profile-bar"><img src="Profile.png" alt="Profile"></div>
-        <div class="top-right">
-            <div class="settings-btn"><img src="Setting.png" alt="Settings"></div>
-            <div class="news-banner"><img src="News.png" alt="News"></div>
+        <div class="profile-card">
+            <div class="avatar"></div>
+            <div style="font-weight: 900; color: #333;">주인님</div>
+            <div class="currency">
+                <div class="currency-item" style="color: #f39c12;"><i class="material-icons" style="font-size:16px">payments</i> 12,500</div>
+                <div class="currency-item" style="color: #3498db;"><i class="material-icons" style="font-size:16px">diamond</i> 320</div>
+            </div>
         </div>
+        <button class="settings-btn">
+            <i class="material-icons">settings</i>
+        </button>
     </header>
 
-    <main class="main-character"></main>
+    <div class="news-container">
+        <div class="news-header">새소식</div>
+        <div class="news-content">새로운 드래곤 업데이트! 지금 상점에서 확인하세요.</div>
+    </div>
+
+    <main class="main-stage">
+        <div class="monster-spot"></div>
+    </main>
 
     <footer class="bottom-menu">
-        <div class="menu-btn shop-btn"><img src="Shop.png" alt="Shop"></div>
-        <div class="menu-btn deck-btn"><img src="Deck.png" alt="Deck"></div>
-        <div class="menu-btn battle-btn"><img src="Matchmake.png" alt="Battle"></div>
+        <div class="btn btn-shop">
+            <i class="material-icons">shopping_bag</i>
+            <span>상점</span>
+        </div>
+        <div class="btn btn-deck">
+            <i class="material-icons">style</i>
+            <span>인벤토리</span>
+        </div>
+        <div class="btn btn-battle">
+            <span>전투 시작!</span>
+        </div>
     </footer>
 
+    <script>
+        // 나중에 여기서 재화 수치를 실시간으로 변경할 예정입니다!
+    </script>
 </body>
 </html>
