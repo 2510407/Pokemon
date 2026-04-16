@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Monster Master - Presentation UI</title>
+    <title>Monster Master - Home v2</title>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <style>
-        /* 폰트 적용 */
+        /* 주인님 선택 폰트 적용 */
         @font-face {
             font-family: 'Presentation';
             src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2404@1.0/Freesentation-8ExtraBold.woff2') format('woff2');
@@ -15,100 +15,108 @@
         }
 
         :root {
-            --primary-gold: linear-gradient(to bottom, #ffd700, #ff8c00);
-            --bg-color: radial-gradient(circle, #fdfdfd 0%, #e0e0e2 100%);
-            --panel-bg: rgba(255, 255, 255, 0.95);
+            /* 컬러 및 효과 변수 정의 */
+            --bg-color: #f7fafe; /* 아주 연한 파란색 배경 */
+            --panel-bg: rgba(255, 255, 255, 0.85); /* 반투명 흰색 */
+            --glass-blur: blur(8px);
+            --border-style: 1px solid rgba(255, 255, 255, 0.3);
+            --soft-shadow: 0 10px 30px rgba(0,0,0,0.03);
             --main-font: 'Presentation', sans-serif;
+            --main-blue: #42a5f5;
+            --event-pink: linear-gradient(135deg, #ff80ab, #f06292);
         }
 
         body {
             margin: 0; padding: 0;
-            background: var(--bg-color);
+            background-color: var(--bg-color);
             height: 100vh; display: flex; flex-direction: column;
-            font-family: var(--main-font); /* 선택하신 폰트 적용 */
-            overflow: hidden;
-            user-select: none;
+            font-family: var(--main-font);
+            overflow: hidden; user-select: none;
         }
 
-        /* --- 상단 프로필 --- */
+        /* --- 공통 카드 스타일 (주인님 레퍼런스 적용) --- */
+        .card-panel {
+            background-color: var(--panel-bg);
+            backdrop-filter: var(--glass-blur);
+            border: var(--border-style);
+            border-radius: 20px;
+            box-shadow: var(--soft-shadow);
+            cursor: pointer;
+            transition: 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: flex; flex-direction: column; align-items: center;
+        }
+        .card-panel:active { transform: scale(0.96); }
+
+        /* 이벤트 배지 스타일 */
+        .event-badge {
+            background: var(--event-pink); color: white;
+            padding: 3px 12px; border-radius: 50px;
+            font-size: 0.8rem; margin-bottom: 5px;
+        }
+
+        /* --- 상단 프로필 및 재화 --- */
         .top-nav {
-            display: flex; justify-content: space-between; align-items: flex-start;
-            padding: 30px; width: 100%; box-sizing: border-box;
+            display: flex; justify-content: flex-start; padding: 20px;
         }
-
         .profile-card {
-            display: flex; align-items: center;
-            background: var(--panel-bg);
-            border: 3px solid #fff; border-radius: 50px;
-            padding: 10px 30px; box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+            display: flex; align-items: center; gap: 10px;
+            padding: 8px 20px;
         }
-
-        .currency { display: flex; gap: 15px; margin-left: 20px; }
+        .currency { display: flex; gap: 10px; }
         .currency-item {
-            display: flex; align-items: center; gap: 8px;
-            background: #f0f0f5; padding: 5px 18px; border-radius: 20px;
-            font-size: 1.1rem; color: #333;
+            display: flex; align-items: center; gap: 6px;
+            color: #555; font-size: 1rem;
         }
 
-        .settings-btn {
-            width: 55px; height: 55px;
-            background: var(--panel-bg); border-radius: 50%; border: 3px solid #fff;
-            display: flex; justify-content: center; align-items: center;
-            cursor: pointer; box-shadow: 0 6px 15px rgba(0,0,0,0.1);
-            transition: 0.3s;
+        /* --- 중앙 새소식 배너 (카드 스타일 적용) --- */
+        .news-card {
+            position: absolute; top: 20px; right: 20px;
+            width: 320px; padding: 15px; align-items: flex-start;
         }
-        .settings-btn:hover { transform: rotate(90deg); }
+        .news-header { font-size: 1.1rem; color: #333; margin-bottom: 10px; }
+        .news-content { font-size: 0.9rem; color: #666; font-weight: 400; line-height: 1.5; }
 
-        /* --- 새소식 배너 --- */
-        .news-container {
-            position: absolute; top: 110px; right: 30px;
-            width: 320px; background: var(--panel-bg);
-            border-radius: 20px; border: 3px solid #fff;
-            box-shadow: 0 12px 25px rgba(0,0,0,0.06);
-            overflow: hidden;
+        /* --- 중앙 메인 영역 --- */
+        .main-stage { flex: 1; display: flex; justify-content: center; align-items: center; }
+        .monster-spot {
+            width: 300px; height: 100px;
+            background: rgba(0,0,0,0.03); border-radius: 50%;
+            filter: blur(15px);
         }
-        .news-header {
-            background: #4a90e2; color: white; padding: 12px 20px;
-            font-size: 1.1rem; letter-spacing: 1px;
-        }
-        .news-content { padding: 20px; font-size: 1rem; color: #555; line-height: 1.5; }
 
-        /* --- 하단 레이아웃 --- */
+        /* --- 하단 메뉴 레이아웃 --- */
         .bottom-container {
             position: absolute; bottom: 0; left: 0; width: 100%;
             display: flex; justify-content: space-between; align-items: flex-end;
-            padding: 50px; box-sizing: border-box;
+            padding: 30px; box-sizing: border-box;
         }
 
-        .left-menus { display: flex; gap: 25px; }
+        .left-menus { display: flex; gap: 15px; }
 
+        /* 왼쪽 소형 버튼 (상점, 인벤토리, 레퍼런스 스타일) */
         .btn-small {
-            width: 95px; height: 95px; background: #4da3ff; border: 5px solid #fff;
-            border-radius: 25px; color: white; display: flex; flex-direction: column;
-            justify-content: center; align-items: center; cursor: pointer;
-            box-shadow: 0 8px 0 #0052cc; transition: 0.1s;
+            width: 90px; height: 90px;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
         }
-        .btn-small.gray { background: #9da3af; box-shadow: 0 8px 0 #646c7a; }
-        .btn-small:active { transform: translateY(5px); box-shadow: 0 3px 0 #0052cc; }
-        .btn-small span { font-size: 1.1rem; margin-top: 5px; }
+        .btn-small i { font-size: 35px; color: #555; margin-bottom: 3px; }
+        .btn-small span { font-size: 1rem; color: #444; }
 
-        /* 🔥 거대 전투 버튼 (폰트 빨 제대로 받는 구간) */
+        /* 🔥 거대 전투 버튼 (폰트빨대로!) */
         .btn-battle-huge {
-            width: 550px; height: 140px; 
-            background: var(--primary-gold);
-            border: 8px solid #fff; border-radius: 100px;
-            color: white; font-size: 58px; /* 폰트빨을 위해 더 크게! */
+            width: 500px; height: 120px; 
+            background: linear-gradient(to bottom, #ffd700, #ff8c00);
+            border: 6px solid #fff; border-radius: 60px;
+            color: white; font-size: 50px; font-weight: 900;
             display: flex; justify-content: center; align-items: center;
-            cursor: pointer; text-shadow: 0 4px 0 rgba(0,0,0,0.15);
-            box-shadow: 0 15px 0 #cc6600, 0 25px 50px rgba(0,0,0,0.25);
-            transition: 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            letter-spacing: -1px;
+            cursor: pointer; text-shadow: 0 3px 6px rgba(0,0,0,0.2);
+            box-shadow: 0 10px 0 #cc7000, 0 20px 40px rgba(0,0,0,0.15);
+            transition: all 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
 
-        .btn-battle-huge:hover { transform: scale(1.03) translateY(-8px); }
+        .btn-battle-huge:hover { transform: translateY(-5px) scale(1.02); }
         .btn-battle-huge:active { 
-            transform: translateY(12px); 
-            box-shadow: 0 3px 0 #cc6600; 
+            transform: translateY(8px); 
+            box-shadow: 0 2px 0 #cc7000; 
         }
 
     </style>
@@ -116,32 +124,33 @@
 <body>
 
     <header class="top-nav">
-        <div class="profile-card">
-            <div style="font-size: 1.6rem; color: #222;">주인님</div>
+        <div class="card-panel profile-card">
+            <div style="font-size: 1.3rem; color: #333;">주인님</div>
             <div class="currency">
-                <div class="currency-item" style="color: #f39c12;">💰 12,500</div>
-                <div class="currency-item" style="color: #3498db;">💎 320</div>
+                <div class="currency-item">💰 12,500</div>
+                <div class="currency-item">💎 320</div>
             </div>
         </div>
-        <button class="settings-btn">
-            <i class="material-icons" style="font-size: 35px; color: #666;">settings</i>
-        </button>
     </header>
 
-    <div class="news-container">
-        <div class="news-header">NEWS</div>
+    <div class="card-panel news-card">
+        <div class="news-header">📜 새소식</div>
         <div class="news-content">새로운 몬스터 드래곤 등장!<br>지금 바로 상점에서 확인하세요.</div>
     </div>
 
+    <main class="main-stage">
+        <div class="monster-spot"></div>
+    </main>
+
     <div class="bottom-container">
         <div class="left-menus">
-            <div class="btn-small">
-                <i class="material-icons" style="font-size: 40px;">shopping_bag</i>
+            <div class="card-panel btn-small">
+                <i class="material-icons">shopping_bag</i>
                 <span>상점</span>
             </div>
-            <div class="btn-small gray">
-                <i class="material-icons" style="font-size: 40px;">style</i>
-                <span>인벤토리</span>
+            <div class="card-panel btn-small">
+                <i class="material-icons">style</i>
+                <span>덱</span>
             </div>
         </div>
 
