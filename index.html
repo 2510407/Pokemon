@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Monster Master - Home v3.3</title>
+    <title>Monster Master - Home v3.4</title>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <style>
         @font-face {
@@ -20,7 +20,6 @@
             --border-style: 1px solid rgba(255, 255, 255, 0.8);
             --strong-shadow: 0 15px 45px rgba(0, 0, 0, 0.12), 0 5px 15px rgba(0, 0, 0, 0.05); 
             --main-font: 'Presentation', sans-serif;
-            /* 레퍼런스 기반 하늘색 포인트 컬러 */
             --battle-blue: #81d4fa; 
         }
 
@@ -105,38 +104,41 @@
         .btn-small i { font-size: 40px; color: #444; margin-bottom: 5px; }
         .btn-small span { font-size: 1.2rem; color: #333; }
 
-        /* 🔥 수정된 "배틀 !" 버튼 */
+        /* 🔥 하얀 테두리가 더 크게 강조된 "배틀 !" 버튼 */
         .btn-battle-huge {
-            width: 520px; height: 125px; 
-            background-color: var(--battle-blue); /* 하늘색 포인트 */
-            border: 4px solid #fff; 
-            border-radius: 65px;
+            width: 520px; height: 130px; 
+            background-color: var(--battle-blue); 
+            /* 테두리 두께를 8px로 대폭 키우고 선명한 하얀색 적용 */
+            border: 8px solid #ffffff; 
+            border-radius: 70px;
             color: white; 
-            font-size: 56px; 
+            font-size: 58px; 
             font-weight: 900;
             display: flex; justify-content: center; align-items: center;
             cursor: pointer; 
-            /* 레퍼런스 스타일의 검은색 텍스트 외곽선 */
             text-shadow: 
                 -2px -2px 0 #000,  
                  2px -2px 0 #000,
                 -2px  2px 0 #000,
                  2px  2px 0 #000,
-                 0px  4px 10px rgba(0,0,0,0.2);
-            box-shadow: var(--strong-shadow);
+                 0px  4px 12px rgba(0,0,0,0.3);
+            /* 테두리가 굵어짐에 따라 그림자 범위도 소폭 확대 */
+            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.15);
             transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             letter-spacing: -1px;
         }
 
         .btn-battle-huge:hover { 
-            transform: translateY(-5px) scale(1.02); 
-            background-color: #4fc3f7; /* 약간 더 진한 하늘색 */
-            box-shadow: 0 20px 55px rgba(0, 0, 0, 0.18);
+            transform: translateY(-5px) scale(1.03); 
+            background-color: #4fc3f7;
+            /* 호버 시 테두리가 더 빛나 보이는 효과 */
+            border-color: #ffffff;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.2);
         }
         
         .btn-battle-huge:active { 
-            transform: scale(0.95); 
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1); 
+            transform: scale(0.96); 
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1); 
         }
 
     </style>
