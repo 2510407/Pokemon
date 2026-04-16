@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Monster Master - Home v3.2</title>
+    <title>Monster Master - Home v3.2 Integrated</title>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <style>
         @font-face {
@@ -15,10 +15,9 @@
 
         :root {
             --bg-color: #f7fafe;
-            --panel-bg: rgba(255, 255, 255, 0.95); /* 배경을 조금 더 불투명하게 해서 대비 강화 */
+            --panel-bg: rgba(255, 255, 255, 0.95);
             --glass-blur: blur(10px);
             --border-style: 1px solid rgba(255, 255, 255, 0.8);
-            /* 🔥 그림자 강화: 더 어둡고(0.12), 더 멀리(50px) 퍼지도록 수정 */
             --strong-shadow: 0 15px 45px rgba(0, 0, 0, 0.12), 0 5px 15px rgba(0, 0, 0, 0.05); 
             --main-font: 'Presentation', sans-serif;
         }
@@ -31,20 +30,19 @@
             overflow: hidden; user-select: none;
         }
 
-        /* --- 공통 카드 스타일 (그림자 강화 적용) --- */
+        /* --- 공통 카드 스타일 --- */
         .card-panel {
             background-color: var(--panel-bg);
             backdrop-filter: var(--glass-blur);
             border: var(--border-style);
             border-radius: 22px;
-            box-shadow: var(--strong-shadow); /* 강화된 그림자 */
+            box-shadow: var(--strong-shadow);
             cursor: pointer;
             transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             display: flex; flex-direction: column; align-items: center;
             justify-content: center;
         }
         
-        /* 호버 시 살짝 더 떠오르는 효과 */
         .card-panel:hover {
             transform: translateY(-5px);
             box-shadow: 0 20px 55px rgba(0, 0, 0, 0.15);
@@ -62,10 +60,18 @@
             flex-direction: row; gap: 18px; padding: 12px 30px; border-radius: 60px;
         }
 
+        /* 🔥 설정 버튼 & 회전 애니메이션 통합 */
         .settings-btn {
             width: 60px; height: 60px; border-radius: 50%;
         }
-        .settings-btn i { color: #555; font-size: 32px; }
+        .settings-btn i { 
+            color: #555; 
+            font-size: 32px; 
+            transition: transform 0.3s ease-in-out; /* 회전 부드럽게 */
+        }
+        .settings-btn:hover i { 
+            transform: rotate(90deg); /* 호버 시 90도 회전 */
+        }
 
         .top-right-group {
             display: flex; flex-direction: column; align-items: flex-end; gap: 15px;
@@ -96,7 +102,6 @@
         .btn-small i { font-size: 40px; color: #444; margin-bottom: 5px; }
         .btn-small span { font-size: 1.2rem; color: #333; }
 
-        /* 🔥 거대 전투 버튼: 그림자 효과를 레이어 형태로 쌓아서 더 묵직하게 */
         .btn-battle-huge {
             width: 520px; height: 130px; 
             background: linear-gradient(to bottom, #ffd700, #ff8c00);
@@ -105,7 +110,6 @@
             display: flex; justify-content: center; align-items: center;
             cursor: pointer; 
             text-shadow: 0 4px 8px rgba(0,0,0,0.25);
-            /* 버튼 하단 깊이감 표현(12px) + 바닥 그림자(45px) */
             box-shadow: 0 12px 0 #cc7000, 0 25px 50px rgba(0,0,0,0.3);
             transition: all 0.1s ease-out;
             letter-spacing: -1px;
