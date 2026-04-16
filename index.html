@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monster Card Game</title>
+    <style>
+        body {
+            margin: 0; padding: 0;
+            background: radial-gradient(circle, #fdfdfd 0%, #e0e0e2 100%);
+            height: 100vh; display: flex; flex-direction: column;
+            font-family: 'Noto Sans KR', sans-serif; overflow: hidden;
+        }
+
+        /* 상단 바 */
+        .top-nav {
+            display: flex; justify-content: space-between; align-items: flex-start;
+            padding: 20px; width: 100%; box-sizing: border-box;
+        }
+        .profile-bar img { width: 320px; filter: drop-shadow(0 4px 4px rgba(0,0,0,0.1)); }
+        .top-right { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
+        .settings-btn img { width: 45px; cursor: pointer; transition: transform 0.2s; }
+        .news-banner img { width: 350px; border-radius: 10px; }
+
+        /* 중앙 영역 (캐릭터 실루엣은 나중에 추가 가능) */
+        .main-character { flex: 1; display: flex; justify-content: center; align-items: center; }
+
+        /* 하단 버튼 */
+        .bottom-menu {
+            display: flex; justify-content: center; align-items: flex-end;
+            gap: 15px; padding-bottom: 40px;
+        }
+        .menu-btn { cursor: pointer; transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .menu-btn:hover { transform: scale(1.05) translateY(-5px); }
+        .menu-btn:active { transform: scale(0.95); }
+        .menu-btn img { display: block; filter: drop-shadow(0 6px 8px rgba(0,0,0,0.15)); }
+
+        /* 이미지 크기 미세 조정 */
+        .shop-btn img { width: 200px; }
+        .deck-btn img { width: 200px; }
+        .battle-btn img { width: 300px; }
+    </style>
+</head>
+<body>
+
+    <header class="top-nav">
+        <div class="profile-bar"><img src="Profile.png" alt="Profile"></div>
+        <div class="top-right">
+            <div class="settings-btn"><img src="Setting.png" alt="Settings"></div>
+            <div class="news-banner"><img src="News.png" alt="News"></div>
+        </div>
+    </header>
+
+    <main class="main-character"></main>
+
+    <footer class="bottom-menu">
+        <div class="menu-btn shop-btn"><img src="Shop.png" alt="Shop"></div>
+        <div class="menu-btn deck-btn"><img src="Deck.png" alt="Deck"></div>
+        <div class="menu-btn battle-btn"><img src="Matchmake.png" alt="Battle"></div>
+    </footer>
+
+</body>
+</html>
