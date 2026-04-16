@@ -3,14 +3,88 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Monster Master - Home v3.4</title>
+    <title>Monster Master - Online v3.7</title>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        // 주인님의 Firebase 설정
+        const firebaseConfig = {
+            apiKey: "AIzaSyDb2Fh9FHOe7Is0BAoaVDojFJvs8XUgJcg",
+            authDomain: "pokemon-fa8e3.firebaseapp.com",
+            projectId: "pokemon-fa8e3",
+            storageBucket: "pokemon-fa8e3.firebasestorage.app",
+            messagingSenderId: "709221600685",
+            appId: "1:709221600685:web:1d7d369cfd25b679d2e524",
+            measurementId: "G-J8EE2SP3K8"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const provider = new GoogleAuthProvider();
+
+        // DOM 요소 연결
+        const profileCard = document.getElementById('profile-card');
+        const userNameDisp = document.getElementById('user-name');
+        const goldDisp = document.getElementById('gold-count');
+        const gemDisp = document.getElementById('gem-count');
+        const onlineDot = document.getElementById('online-dot');
+
+        // 로그인 함수
+        async function login() {
+            try {
+                await signInWithPopup(auth, provider);
+            } catch (error) {
+                console.error("로그인 실패:", error);
+                alert("로그인 중 오류가 발생했습니다.");
+            }
+        }
+
+        // 로그인 상태 및 데이터 실시간 연동
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                onlineDot.style.background = "#4caf50";
+                userNameDisp.innerText = user.displayName;
+
+                const userRef = doc(db, "users", user.uid);
+                
+                onSnapshot(userRef, async (docSnap) => {
+                    if (!docSnap.exists()) {
+                        // 신규 유저 보상 지급 (최초 1회)
+                        await setDoc(userRef, {
+                            name: user.displayName,
+                            gold: 10000,
+                            gem: 100,
+                            lv: 1,
+                            inventory: ["card_001"]
+                        });
+                    } else {
+                        // 기존 유저 데이터 불러오기
+                        const data = docSnap.data();
+                        goldDisp.innerText = data.gold.toLocaleString();
+                        gemDisp.innerText = data.gem.toLocaleString();
+                    }
+                });
+            } else {
+                onlineDot.style.background = "#bbb";
+                userNameDisp.innerText = "로그인 하세요";
+                goldDisp.innerText = "0";
+                gemDisp.innerText = "0";
+            }
+        });
+
+        profileCard.addEventListener('click', login);
+    </script>
+
     <style>
         @font-face {
             font-family: 'Presentation';
             src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2404@1.0/Freesentation-8ExtraBold.woff2') format('woff2');
-            font-weight: 800;
-            font-display: swap;
+            font-weight: 800; font-display: swap;
         }
 
         :root {
@@ -18,139 +92,84 @@
             --panel-bg: rgba(255, 255, 255, 0.95);
             --glass-blur: blur(10px);
             --border-style: 1px solid rgba(255, 255, 255, 0.8);
-            --strong-shadow: 0 15px 45px rgba(0, 0, 0, 0.12), 0 5px 15px rgba(0, 0, 0, 0.05); 
+            --strong-shadow: 0 15px 45px rgba(0, 0, 0, 0.12);
             --main-font: 'Presentation', sans-serif;
             --battle-blue: #81d4fa; 
         }
 
         body {
-            margin: 0; padding: 0;
-            background-color: var(--bg-color);
+            margin: 0; padding: 0; background-color: var(--bg-color);
             height: 100vh; display: flex; flex-direction: column;
-            font-family: var(--main-font);
-            overflow: hidden; user-select: none;
+            font-family: var(--main-font); overflow: hidden; user-select: none;
         }
 
-        /* --- 공통 카드 스타일 --- */
         .card-panel {
-            background-color: var(--panel-bg);
-            backdrop-filter: var(--glass-blur);
-            border: var(--border-style);
-            border-radius: 22px;
-            box-shadow: var(--strong-shadow);
-            cursor: pointer;
-            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            display: flex; flex-direction: column; align-items: center;
-            justify-content: center;
+            background-color: var(--panel-bg); backdrop-filter: var(--glass-blur);
+            border: var(--border-style); border-radius: 22px; box-shadow: var(--strong-shadow);
+            cursor: pointer; transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
         }
-        
-        .card-panel:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 20px 55px rgba(0, 0, 0, 0.15);
-        }
-        
+        .card-panel:hover { transform: translateY(-5px); box-shadow: 0 20px 55px rgba(0, 0, 0, 0.15); }
         .card-panel:active { transform: scale(0.95); }
 
-        /* --- 상단 레이아웃 --- */
-        .top-nav {
-            display: flex; justify-content: space-between; align-items: flex-start;
-            padding: 30px; width: 100%; box-sizing: border-box;
+        /* 상단 레이아웃 */
+        .top-nav { display: flex; justify-content: space-between; align-items: flex-start; padding: 30px; width: 100%; box-sizing: border-box; }
+        
+        .profile-card { 
+            flex-direction: row; gap: 18px; padding: 12px 30px; border-radius: 60px; position: relative;
+        }
+        /* 온라인 상태 점 */
+        .online-dot {
+            width: 12px; height: 12px; background: #bbb; border-radius: 50%;
+            position: absolute; left: 15px; top: 50%; transform: translateY(-50%);
+            border: 2px solid white;
         }
 
-        .profile-card {
-            flex-direction: row; gap: 18px; padding: 12px 30px; border-radius: 60px;
-        }
+        .top-right-group { display: flex; flex-direction: column; align-items: flex-end; gap: 15px; }
+        .settings-btn { width: 60px; height: 60px; border-radius: 50%; }
+        .settings-btn i { color: #555; font-size: 32px; transition: transform 0.3s; }
+        .settings-btn:hover i { transform: rotate(90deg); }
 
-        .settings-btn {
-            width: 60px; height: 60px; border-radius: 50%;
-        }
-        .settings-btn i { 
-            color: #555; 
-            font-size: 32px; 
-            transition: transform 0.3s ease-in-out;
-        }
-        .settings-btn:hover i { 
-            transform: rotate(90deg);
-        }
-
-        .top-right-group {
-            display: flex; flex-direction: column; align-items: flex-end; gap: 15px;
-        }
-
-        .news-card {
-            width: 340px; padding: 20px; align-items: flex-start; border-radius: 20px;
-        }
+        .news-card { width: 340px; padding: 20px; align-items: flex-start; border-radius: 20px; }
         .news-header { font-size: 1.2rem; color: #222; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
         .news-content { font-size: 1rem; color: #555; font-weight: 400; line-height: 1.5; }
 
-        /* --- 중앙 & 배경 --- */
+        /* 중앙 스테이지 */
         .main-stage { flex: 1; display: flex; justify-content: center; align-items: center; }
-        .monster-spot { 
-            width: 350px; height: 120px; 
-            background: rgba(0,0,0,0.04); 
-            border-radius: 50%; 
-            filter: blur(20px); 
-        }
+        .monster-spot { width: 350px; height: 120px; background: rgba(0,0,0,0.04); border-radius: 50%; filter: blur(20px); }
 
-        /* --- 하단 레이아웃 --- */
+        /* 하단 레이아웃 */
         .bottom-container {
             position: absolute; bottom: 0; left: 0; width: 100%;
             display: flex; justify-content: space-between; align-items: flex-end;
             padding: 50px; box-sizing: border-box;
         }
-
         .left-menus { display: flex; gap: 20px; }
         .btn-small { width: 100px; height: 100px; }
         .btn-small i { font-size: 40px; color: #444; margin-bottom: 5px; }
         .btn-small span { font-size: 1.2rem; color: #333; }
 
-        /* 🔥 하얀 테두리가 더 크게 강조된 "배틀 !" 버튼 */
+        /* 🔥 하얀 테두리 배틀 버튼 */
         .btn-battle-huge {
-            width: 520px; height: 130px; 
-            background-color: var(--battle-blue); 
-            /* 테두리 두께를 8px로 대폭 키우고 선명한 하얀색 적용 */
-            border: 8px solid #ffffff; 
-            border-radius: 70px;
-            color: white; 
-            font-size: 58px; 
-            font-weight: 900;
+            width: 520px; height: 130px; background-color: var(--battle-blue); 
+            border: 8px solid #ffffff; border-radius: 70px;
+            color: white; font-size: 58px; font-weight: 900;
             display: flex; justify-content: center; align-items: center;
-            cursor: pointer; 
-            text-shadow: 
-                -2px -2px 0 #000,  
-                 2px -2px 0 #000,
-                -2px  2px 0 #000,
-                 2px  2px 0 #000,
-                 0px  4px 12px rgba(0,0,0,0.3);
-            /* 테두리가 굵어짐에 따라 그림자 범위도 소폭 확대 */
-            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.15);
-            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            letter-spacing: -1px;
+            cursor: pointer; text-shadow: -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000, 0px 4px 12px rgba(0,0,0,0.3);
+            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.15); transition: all 0.2s;
         }
-
-        .btn-battle-huge:hover { 
-            transform: translateY(-5px) scale(1.03); 
-            background-color: #4fc3f7;
-            /* 호버 시 테두리가 더 빛나 보이는 효과 */
-            border-color: #ffffff;
-            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.2);
-        }
-        
-        .btn-battle-huge:active { 
-            transform: scale(0.96); 
-            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1); 
-        }
-
+        .btn-battle-huge:hover { transform: translateY(-5px) scale(1.03); background-color: #4fc3f7; }
     </style>
 </head>
 <body>
 
     <header class="top-nav">
-        <div class="card-panel profile-card">
-            <div style="font-size: 1.6rem; color: #111;">주인님</div>
+        <div class="card-panel profile-card" id="profile-card">
+            <div id="online-dot" class="online-dot"></div>
+            <div id="user-name" style="font-size: 1.6rem; color: #111; margin-left: 10px;">로그인 하세요</div>
             <div style="display: flex; gap: 15px; font-size: 1.2rem;">
-                <span style="color: #d35400;">💰 12,500</span>
-                <span style="color: #2980b9;">💎 320</span>
+                <span style="color: #d35400;">💰 <span id="gold-count">0</span></span>
+                <span style="color: #2980b9;">💎 <span id="gem-count">0</span></span>
             </div>
         </div>
 
@@ -160,7 +179,7 @@
             </div>
             <div class="card-panel news-card">
                 <div class="news-header"><i class="material-icons" style="font-size: 20px; color: #f39c12;">notifications</i> 새소식</div>
-                <div class="news-content">새로운 몬스터 드래곤 등장!<br>지금 바로 상점에서 확인하세요.</div>
+                <div class="news-content">Firebase 서버 연결 완료!<br>이제 온라인 데이터가 저장됩니다.</div>
             </div>
         </div>
     </header>
