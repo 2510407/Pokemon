@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Monster Master - Home v3.2 Integrated</title>
+    <title>Monster Master - Home v3.3</title>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <style>
         @font-face {
@@ -20,6 +20,8 @@
             --border-style: 1px solid rgba(255, 255, 255, 0.8);
             --strong-shadow: 0 15px 45px rgba(0, 0, 0, 0.12), 0 5px 15px rgba(0, 0, 0, 0.05); 
             --main-font: 'Presentation', sans-serif;
+            /* 레퍼런스 기반 하늘색 포인트 컬러 */
+            --battle-blue: #81d4fa; 
         }
 
         body {
@@ -50,7 +52,7 @@
         
         .card-panel:active { transform: scale(0.95); }
 
-        /* --- 레이아웃 --- */
+        /* --- 상단 레이아웃 --- */
         .top-nav {
             display: flex; justify-content: space-between; align-items: flex-start;
             padding: 30px; width: 100%; box-sizing: border-box;
@@ -60,17 +62,16 @@
             flex-direction: row; gap: 18px; padding: 12px 30px; border-radius: 60px;
         }
 
-        /* 🔥 설정 버튼 & 회전 애니메이션 통합 */
         .settings-btn {
             width: 60px; height: 60px; border-radius: 50%;
         }
         .settings-btn i { 
             color: #555; 
             font-size: 32px; 
-            transition: transform 0.3s ease-in-out; /* 회전 부드럽게 */
+            transition: transform 0.3s ease-in-out;
         }
         .settings-btn:hover i { 
-            transform: rotate(90deg); /* 호버 시 90도 회전 */
+            transform: rotate(90deg);
         }
 
         .top-right-group {
@@ -83,6 +84,7 @@
         .news-header { font-size: 1.2rem; color: #222; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
         .news-content { font-size: 1rem; color: #555; font-weight: 400; line-height: 1.5; }
 
+        /* --- 중앙 & 배경 --- */
         .main-stage { flex: 1; display: flex; justify-content: center; align-items: center; }
         .monster-spot { 
             width: 350px; height: 120px; 
@@ -91,6 +93,7 @@
             filter: blur(20px); 
         }
 
+        /* --- 하단 레이아웃 --- */
         .bottom-container {
             position: absolute; bottom: 0; left: 0; width: 100%;
             display: flex; justify-content: space-between; align-items: flex-end;
@@ -102,23 +105,38 @@
         .btn-small i { font-size: 40px; color: #444; margin-bottom: 5px; }
         .btn-small span { font-size: 1.2rem; color: #333; }
 
+        /* 🔥 수정된 "배틀 !" 버튼 */
         .btn-battle-huge {
-            width: 520px; height: 130px; 
-            background: linear-gradient(to bottom, #ffd700, #ff8c00);
-            border: 6px solid #fff; border-radius: 65px;
-            color: white; font-size: 52px; font-weight: 900;
+            width: 520px; height: 125px; 
+            background-color: var(--battle-blue); /* 하늘색 포인트 */
+            border: 4px solid #fff; 
+            border-radius: 65px;
+            color: white; 
+            font-size: 56px; 
+            font-weight: 900;
             display: flex; justify-content: center; align-items: center;
             cursor: pointer; 
-            text-shadow: 0 4px 8px rgba(0,0,0,0.25);
-            box-shadow: 0 12px 0 #cc7000, 0 25px 50px rgba(0,0,0,0.3);
-            transition: all 0.1s ease-out;
+            /* 레퍼런스 스타일의 검은색 텍스트 외곽선 */
+            text-shadow: 
+                -2px -2px 0 #000,  
+                 2px -2px 0 #000,
+                -2px  2px 0 #000,
+                 2px  2px 0 #000,
+                 0px  4px 10px rgba(0,0,0,0.2);
+            box-shadow: var(--strong-shadow);
+            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             letter-spacing: -1px;
         }
 
-        .btn-battle-huge:hover { transform: translateY(-3px); }
+        .btn-battle-huge:hover { 
+            transform: translateY(-5px) scale(1.02); 
+            background-color: #4fc3f7; /* 약간 더 진한 하늘색 */
+            box-shadow: 0 20px 55px rgba(0, 0, 0, 0.18);
+        }
+        
         .btn-battle-huge:active { 
-            transform: translateY(10px); 
-            box-shadow: 0 2px 0 #cc7000, 0 10px 20px rgba(0,0,0,0.2); 
+            transform: scale(0.95); 
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1); 
         }
 
     </style>
@@ -160,7 +178,7 @@
                 <span>덱</span>
             </div>
         </div>
-        <div class="btn-battle-huge">전투 시작 !</div>
+        <div class="btn-battle-huge">배틀 !</div>
     </div>
 
 </body>
