@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Monster Master - Home v3.1</title>
+    <title>Monster Master - Home v3.2</title>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <style>
         @font-face {
@@ -15,10 +15,11 @@
 
         :root {
             --bg-color: #f7fafe;
-            --panel-bg: rgba(255, 255, 255, 0.9);
-            --glass-blur: blur(8px);
-            --border-style: 1px solid rgba(255, 255, 255, 0.5);
-            --soft-shadow: 0 10px 40px rgba(0,0,0,0.06); 
+            --panel-bg: rgba(255, 255, 255, 0.95); /* 배경을 조금 더 불투명하게 해서 대비 강화 */
+            --glass-blur: blur(10px);
+            --border-style: 1px solid rgba(255, 255, 255, 0.8);
+            /* 🔥 그림자 강화: 더 어둡고(0.12), 더 멀리(50px) 퍼지도록 수정 */
+            --strong-shadow: 0 15px 45px rgba(0, 0, 0, 0.12), 0 5px 15px rgba(0, 0, 0, 0.05); 
             --main-font: 'Presentation', sans-serif;
         }
 
@@ -30,74 +31,91 @@
             overflow: hidden; user-select: none;
         }
 
-        /* --- 공통 카드 스타일 --- */
+        /* --- 공통 카드 스타일 (그림자 강화 적용) --- */
         .card-panel {
             background-color: var(--panel-bg);
             backdrop-filter: var(--glass-blur);
             border: var(--border-style);
-            border-radius: 20px;
-            box-shadow: var(--soft-shadow);
+            border-radius: 22px;
+            box-shadow: var(--strong-shadow); /* 강화된 그림자 */
             cursor: pointer;
-            transition: 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             display: flex; flex-direction: column; align-items: center;
             justify-content: center;
         }
-        .card-panel:active { transform: scale(0.96); }
+        
+        /* 호버 시 살짝 더 떠오르는 효과 */
+        .card-panel:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 55px rgba(0, 0, 0, 0.15);
+        }
+        
+        .card-panel:active { transform: scale(0.95); }
 
-        /* --- 상단 레이아웃 --- */
+        /* --- 레이아웃 --- */
         .top-nav {
             display: flex; justify-content: space-between; align-items: flex-start;
-            padding: 25px; width: 100%; box-sizing: border-box;
+            padding: 30px; width: 100%; box-sizing: border-box;
         }
 
         .profile-card {
-            flex-direction: row; gap: 15px; padding: 8px 25px; border-radius: 50px;
+            flex-direction: row; gap: 18px; padding: 12px 30px; border-radius: 60px;
         }
 
-        /* 🔥 복구된 설정 버튼 스타일 */
         .settings-btn {
-            width: 55px; height: 55px; border-radius: 50%;
+            width: 60px; height: 60px; border-radius: 50%;
         }
-        .settings-btn i { color: #666; font-size: 30px; }
-        .settings-btn:hover i { transform: rotate(90deg); transition: 0.3s; }
+        .settings-btn i { color: #555; font-size: 32px; }
 
-        /* --- 상단 우측 그룹 (설정 + 새소식) --- */
         .top-right-group {
             display: flex; flex-direction: column; align-items: flex-end; gap: 15px;
         }
 
         .news-card {
-            width: 320px; padding: 15px; align-items: flex-start; border-radius: 15px;
+            width: 340px; padding: 20px; align-items: flex-start; border-radius: 20px;
         }
-        .news-header { font-size: 1.1rem; color: #333; margin-bottom: 5px; display: flex; align-items: center; gap: 5px; }
-        .news-content { font-size: 0.9rem; color: #666; font-weight: 400; line-height: 1.4; }
+        .news-header { font-size: 1.2rem; color: #222; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+        .news-content { font-size: 1rem; color: #555; font-weight: 400; line-height: 1.5; }
 
-        /* --- 중앙 & 하단 레이아웃 --- */
         .main-stage { flex: 1; display: flex; justify-content: center; align-items: center; }
-        .monster-spot { width: 300px; height: 100px; background: rgba(0,0,0,0.03); border-radius: 50%; filter: blur(15px); }
+        .monster-spot { 
+            width: 350px; height: 120px; 
+            background: rgba(0,0,0,0.04); 
+            border-radius: 50%; 
+            filter: blur(20px); 
+        }
 
         .bottom-container {
             position: absolute; bottom: 0; left: 0; width: 100%;
             display: flex; justify-content: space-between; align-items: flex-end;
-            padding: 40px; box-sizing: border-box;
+            padding: 50px; box-sizing: border-box;
         }
 
-        .left-menus { display: flex; gap: 15px; }
-        .btn-small { width: 90px; height: 90px; }
-        .btn-small i { font-size: 35px; color: #555; margin-bottom: 3px; }
-        .btn-small span { font-size: 1.1rem; color: #444; }
+        .left-menus { display: flex; gap: 20px; }
+        .btn-small { width: 100px; height: 100px; }
+        .btn-small i { font-size: 40px; color: #444; margin-bottom: 5px; }
+        .btn-small span { font-size: 1.2rem; color: #333; }
 
+        /* 🔥 거대 전투 버튼: 그림자 효과를 레이어 형태로 쌓아서 더 묵직하게 */
         .btn-battle-huge {
-            width: 500px; height: 120px; 
+            width: 520px; height: 130px; 
             background: linear-gradient(to bottom, #ffd700, #ff8c00);
-            border: 6px solid #fff; border-radius: 60px;
-            color: white; font-size: 50px; font-weight: 900;
+            border: 6px solid #fff; border-radius: 65px;
+            color: white; font-size: 52px; font-weight: 900;
             display: flex; justify-content: center; align-items: center;
-            cursor: pointer; text-shadow: 0 3px 6px rgba(0,0,0,0.2);
-            box-shadow: 0 10px 0 #cc7000, 0 20px 40px rgba(0,0,0,0.15);
-            transition: all 0.1s;
+            cursor: pointer; 
+            text-shadow: 0 4px 8px rgba(0,0,0,0.25);
+            /* 버튼 하단 깊이감 표현(12px) + 바닥 그림자(45px) */
+            box-shadow: 0 12px 0 #cc7000, 0 25px 50px rgba(0,0,0,0.3);
+            transition: all 0.1s ease-out;
+            letter-spacing: -1px;
         }
-        .btn-battle-huge:active { transform: translateY(8px); box-shadow: 0 2px 0 #cc7000; }
+
+        .btn-battle-huge:hover { transform: translateY(-3px); }
+        .btn-battle-huge:active { 
+            transform: translateY(10px); 
+            box-shadow: 0 2px 0 #cc7000, 0 10px 20px rgba(0,0,0,0.2); 
+        }
 
     </style>
 </head>
@@ -105,10 +123,10 @@
 
     <header class="top-nav">
         <div class="card-panel profile-card">
-            <div style="font-size: 1.4rem; color: #333;">주인님</div>
-            <div style="display: flex; gap: 12px;">
-                <span style="color: #555;">💰 12,500</span>
-                <span style="color: #555;">💎 320</span>
+            <div style="font-size: 1.6rem; color: #111;">주인님</div>
+            <div style="display: flex; gap: 15px; font-size: 1.2rem;">
+                <span style="color: #d35400;">💰 12,500</span>
+                <span style="color: #2980b9;">💎 320</span>
             </div>
         </div>
 
@@ -117,7 +135,7 @@
                 <i class="material-icons">settings</i>
             </div>
             <div class="card-panel news-card">
-                <div class="news-header"><i class="material-icons" style="font-size: 18px;">notifications</i> 새소식</div>
+                <div class="news-header"><i class="material-icons" style="font-size: 20px; color: #f39c12;">notifications</i> 새소식</div>
                 <div class="news-content">새로운 몬스터 드래곤 등장!<br>지금 바로 상점에서 확인하세요.</div>
             </div>
         </div>
