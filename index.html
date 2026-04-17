@@ -11,15 +11,15 @@
         import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getFirestore, doc, onSnapshot, setDoc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyDb2Fh9FHOe7Is0BAoaVDojFJvs8XUgJcg",
-            authDomain: "pokemon-fa8e3.firebaseapp.com",
-            projectId: "pokemon-fa8e3",
-            storageBucket: "pokemon-fa8e3.firebasestorage.app",
-            messagingSenderId: "709221600685",
-            appId: "1:709221600685:web:1d7d369cfd25b679d2e524",
-            measurementId: "G-J8EE2SP3K8"
-        };
+       const firebaseConfig = {
+  apiKey: "AIzaSyDb2Fh9FHOe7IsOBAoaVDojFJvs8XUgJcg", // 이제 유효한 키입니다!
+  authDomain: "pokemon-fa8e3.firebaseapp.com",
+  projectId: "pokemon-fa8e3",
+  storageBucket: "pokemon-fa8e3.firebasestorage.app",
+  messagingSenderId: "709221600685",
+  appId: "1:709221600685:web:1d7d369cfd25b679d2e524",
+  measurementId: "G-J8EE2SP3K8"
+};
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
