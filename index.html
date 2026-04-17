@@ -33,6 +33,7 @@
         const goldDisp = document.getElementById('gold-count');
         const gemDisp = document.getElementById('gem-count');
         const onlineDot = document.getElementById('online-dot');
+        const shopScreen = document.getElementById('shop-screen');
 
         // --- 유틸리티 함수 ---
         function getRemainingTime(lastChanged) {
@@ -46,9 +47,7 @@
         window.handleAuth = async (mode) => {
             const email = document.getElementById('email-input').value;
             const pw = document.getElementById('pw-input').value;
-
             if(!email || !pw) return alert("이메일과 비밀번호를 입력하세요!");
-
             try {
                 if(mode === 'signup') {
                     await createUserWithEmailAndPassword(auth, email, pw);
@@ -57,9 +56,26 @@
                     await signInWithEmailAndPassword(auth, email, pw);
                 }
             } catch (error) {
-                console.error(error);
                 alert("오류 발생: " + error.message);
             }
+        };
+
+        // --- 상점 로직 ---
+        window.openShop = () => { shopScreen.style.display = 'block'; };
+        window.closeShop = () => { shopScreen.style.display = 'none'; };
+
+        window.buyPack = async (price) => {
+            const user = auth.currentUser;
+            if (!user) return alert("로그인이 필요합니다!");
+
+            const userRef = doc(db, "users", user.uid);
+            const docSnap = await getDoc(userRef);
+            const userData = docSnap.data();
+
+            if (userData.gem < price) return alert("다이아몬드가 부족합니다!");
+
+            await updateDoc(userRef, { gem: userData.gem - price });
+            alert("팩 구매 완료! 곧 카드가 추가됩니다.");
         };
 
         // --- 닉네임 변경 ---
@@ -67,28 +83,20 @@
             const userRef = doc(db, "users", user.uid);
             const docSnap = await getDoc(userRef);
             const data = docSnap.data();
-            
             const remaining = getRemainingTime(data.lastNicknameChange);
             if (remaining > 0) {
-                const hours = Math.floor(remaining / (1000 * 60 * 60));
-                alert(`쿨타임 중입니다! ${hours}시간 후에 시도하세요.`);
+                alert(`쿨타임 중! ${Math.floor(remaining/3600000)}시간 후에 가능합니다.`);
                 return;
             }
-
-            const newName = prompt("새 닉네임을 입력하세요 (최대 8자):");
+            const newName = prompt("새 닉네임 (최대 8자):");
             if (newName && newName.trim().length > 0 && newName.length <= 8) {
-                await updateDoc(userRef, { 
-                    name: newName.trim(), 
-                    lastNicknameChange: new Date() 
-                });
-                alert("변경 완료!");
+                await updateDoc(userRef, { name: newName.trim(), lastNicknameChange: new Date() });
             }
         }
 
         // --- 인증 상태 감시 ---
         onAuthStateChanged(auth, async (user) => {
             if (user) {
-                // 로그인 상태
                 loginSection.style.display = 'none';
                 profileCard.style.display = 'flex';
                 onlineDot.style.background = "#4caf50";
@@ -108,14 +116,12 @@
                         userNameDisp.innerText = data.name;
                         goldDisp.innerText = data.gold.toLocaleString();
                         gemDisp.innerText = data.gem.toLocaleString();
-
                         const remaining = getRemainingTime(data.lastNicknameChange);
                         timerDisp.style.display = remaining > 0 ? 'block' : 'none';
                         if(remaining > 0) timerDisp.innerText = `${Math.floor(remaining/3600000)}h 후 변경가능`;
                     }
                 });
             } else {
-                // 로그아웃 상태
                 loginSection.style.display = 'flex';
                 profileCard.style.display = 'none';
                 onlineDot.style.background = "#bbb";
@@ -154,9 +160,7 @@
         }
         .card-panel:hover { transform: translateY(-5px); }
 
-        .top-nav { display: flex; justify-content: space-between; align-items: flex-start; padding: 30px; width: 100%; box-sizing: border-box; }
-        
-        /* 로그인 섹션 스타일 */
+        .top-nav { display: flex; justify-content: space-between; align-items: flex-start; padding: 30px; width: 100%; box-sizing: border-box; z-index: 10; }
         .login-box { flex-direction: row; gap: 10px; padding: 10px 20px; border-radius: 50px; }
         .login-box input { border: none; outline: none; background: rgba(0,0,0,0.05); padding: 8px 15px; border-radius: 20px; font-family: var(--main-font); width: 120px; }
         .auth-btn { background: var(--battle-blue); color: white; border: none; padding: 8px 15px; border-radius: 20px; cursor: pointer; font-weight: bold; }
@@ -164,16 +168,13 @@
         .profile-card { flex-direction: row; gap: 15px; padding: 12px 30px; border-radius: 60px; position: relative; display: none; }
         .online-dot { width: 12px; height: 12px; background: #bbb; border-radius: 50%; position: absolute; left: 15px; top: 50%; transform: translateY(-50%); border: 2px solid white; }
 
-        .top-right-group { display: flex; flex-direction: column; align-items: flex-end; gap: 15px; }
-        .settings-btn { width: 60px; height: 60px; border-radius: 50%; }
         .news-card { width: 340px; padding: 20px; align-items: flex-start; border-radius: 20px; cursor: default; }
 
         .main-stage { flex: 1; display: flex; justify-content: center; align-items: center; }
         .monster-spot { width: 350px; height: 120px; background: rgba(0,0,0,0.04); border-radius: 50%; filter: blur(20px); }
 
         .bottom-container { position: absolute; bottom: 0; left: 0; width: 100%; display: flex; justify-content: space-between; align-items: flex-end; padding: 50px; box-sizing: border-box; }
-        .left-menus { display: flex; gap: 20px; }
-        .btn-small { width: 100px; height: 100px; }
+        .btn-small { width: 100px; height: 100px; margin-right: 15px; }
         .btn-small i { font-size: 40px; color: #444; }
 
         .btn-battle-huge {
@@ -184,9 +185,38 @@
             cursor: pointer; text-shadow: 2px 2px 0 #000;
             box-shadow: 0 15px 50px rgba(0, 0, 0, 0.15); transition: all 0.2s;
         }
+
+        /* --- 상점 스타일 --- */
+        #shop-screen {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg-color); z-index: 1000; padding: 50px; box-sizing: border-box;
+        }
+        .shop-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; }
+        .shop-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 30px; }
+        .pack-card { padding: 30px; height: 400px; justify-content: space-around; }
+        .close-btn { width: 60px; height: 60px; border-radius: 50%; font-size: 1.5rem; background: #fff; }
     </style>
 </head>
 <body>
+
+    <section id="shop-screen">
+        <div class="shop-header">
+            <h1 style="font-size: 3rem; margin: 0;">포켓몬 카드 상점</h1>
+            <div class="card-panel close-btn" onclick="closeShop()">✕</div>
+        </div>
+        <div class="shop-grid">
+            <div class="card-panel pack-card">
+                <div style="font-size: 5rem;">📦</div>
+                <div style="text-align: center;">
+                    <h2 style="margin: 10px 0;">베이직 팩</h2>
+                    <p style="color: #777;">무작위 몬스터 카드 5장</p>
+                </div>
+                <div class="btn-battle-huge" style="width: 220px; height: 70px; font-size: 1.8rem; border-width: 5px;" onclick="buyPack(100)">
+                    💎 100
+                </div>
+            </div>
+        </div>
+    </section>
 
     <header class="top-nav">
         <div class="card-panel login-box" id="login-section">
@@ -209,10 +239,9 @@
         </div>
 
         <div class="top-right-group">
-            <div class="card-panel settings-btn"><i class="material-icons">settings</i></div>
             <div class="card-panel news-card">
                 <div style="font-size: 1.2rem; margin-bottom: 8px;"><i class="material-icons" style="vertical-align: middle; color: #f39c12;">notifications</i> 새소식</div>
-                <div style="font-size: 1rem; color: #555;">이메일 로그인 시스템 도입 완료!</div>
+                <div style="font-size: 1rem; color: #555;">상점 오픈! 카드팩을 구매해 보세요.</div>
             </div>
         </div>
     </header>
@@ -222,9 +251,15 @@
     </main>
 
     <div class="bottom-container">
-        <div class="left-menus">
-            <div class="card-panel btn-small"><i class="material-icons">shopping_bag</i><span>상점</span></div>
-            <div class="card-panel btn-small"><i class="material-icons">style</i><span>덱</span></div>
+        <div style="display: flex;">
+            <div class="card-panel btn-small" onclick="openShop()">
+                <i class="material-icons">shopping_bag</i>
+                <span style="font-size: 1.2rem;">상점</span>
+            </div>
+            <div class="card-panel btn-small">
+                <i class="material-icons">style</i>
+                <span style="font-size: 1.2rem;">덱</span>
+            </div>
         </div>
         <div class="btn-battle-huge">배틀 !</div>
     </div>
