@@ -8,8 +8,8 @@
     
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getFirestore, doc, onSnapshot, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getFirestore, doc, onSnapshot, setDoc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDb2Fh9FHOe7Is0BAoaVDojFJvs8XUgJcg",
@@ -24,59 +24,73 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
-        const provider = new GoogleAuthProvider();
 
+        // DOM 요소들
         const profileCard = document.getElementById('profile-card');
+        const loginSection = document.getElementById('login-section');
         const userNameDisp = document.getElementById('user-name');
         const timerDisp = document.getElementById('nickname-timer');
         const goldDisp = document.getElementById('gold-count');
         const gemDisp = document.getElementById('gem-count');
         const onlineDot = document.getElementById('online-dot');
 
-        // 남은 시간 계산 함수
+        // --- 유틸리티 함수 ---
         function getRemainingTime(lastChanged) {
-            if (!lastChanged) return 0;
+            if (!lastChanged || !lastChanged.toDate) return 0;
             const now = new Date();
             const diff = 86400000 - (now - lastChanged.toDate()); 
             return diff > 0 ? diff : 0;
         }
 
-        // 이름 변경 함수
+        // --- 로그인/회원가입 로직 ---
+        window.handleAuth = async (mode) => {
+            const email = document.getElementById('email-input').value;
+            const pw = document.getElementById('pw-input').value;
+
+            if(!email || !pw) return alert("이메일과 비밀번호를 입력하세요!");
+
+            try {
+                if(mode === 'signup') {
+                    await createUserWithEmailAndPassword(auth, email, pw);
+                    alert("가입을 축하합니다!");
+                } else {
+                    await signInWithEmailAndPassword(auth, email, pw);
+                }
+            } catch (error) {
+                console.error(error);
+                alert("오류 발생: " + error.message);
+            }
+        };
+
+        // --- 닉네임 변경 ---
         async function changeNickname(user) {
             const userRef = doc(db, "users", user.uid);
             const docSnap = await getDoc(userRef);
             const data = docSnap.data();
             
             const remaining = getRemainingTime(data.lastNicknameChange);
-
             if (remaining > 0) {
                 const hours = Math.floor(remaining / (1000 * 60 * 60));
-                const mins = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
-                alert(`아직은 바꿀 수 없어요!\n${hours}시간 ${mins}분 후에 다시 시도해 주세요.`);
+                alert(`쿨타임 중입니다! ${hours}시간 후에 시도하세요.`);
                 return;
             }
 
-            const newName = prompt("새로운 닉네임을 입력하세요 (최대 8자):");
-            if (newName && newName.trim().length > 0) {
-                if (newName.length > 8) {
-                    alert("닉네임은 8자 이내로 설정해 주세요!");
-                    return;
-                }
-                await setDoc(userRef, { 
-                    name: newName, 
+            const newName = prompt("새 닉네임을 입력하세요 (최대 8자):");
+            if (newName && newName.trim().length > 0 && newName.length <= 8) {
+                await updateDoc(userRef, { 
+                    name: newName.trim(), 
                     lastNicknameChange: new Date() 
-                }, { merge: true });
-                alert(`닉네임이 '${newName}'으로 변경되었습니다!`);
+                });
+                alert("변경 완료!");
             }
         }
 
-        async function login() {
-            try { await signInWithPopup(auth, provider); } 
-            catch (error) { console.error("로그인 실패:", error); }
-        }
-
+        // --- 인증 상태 감시 ---
         onAuthStateChanged(auth, async (user) => {
             if (user) {
+                // 로그인 상태
+                loginSection.style.display = 'none';
+                profileCard.style.display = 'flex';
                 onlineDot.style.background = "#4caf50";
                 profileCard.onclick = () => changeNickname(user);
 
@@ -84,11 +98,10 @@
                 onSnapshot(userRef, async (docSnap) => {
                     if (!docSnap.exists()) {
                         await setDoc(userRef, {
-                            name: user.displayName,
-                            gold: 10000,
-                            gem: 100,
-                            lv: 1,
-                            inventory: ["card_001"]
+                            name: user.email.split('@')[0],
+                            gold: 10000, gem: 100, lv: 1,
+                            inventory: ["card_001"],
+                            lastNicknameChange: null
                         });
                     } else {
                         const data = docSnap.data();
@@ -96,22 +109,16 @@
                         goldDisp.innerText = data.gold.toLocaleString();
                         gemDisp.innerText = data.gem.toLocaleString();
 
-                        // 쿨타임 실시간 표시
                         const remaining = getRemainingTime(data.lastNicknameChange);
-                        if (remaining > 0) {
-                            timerDisp.style.display = 'block';
-                            const hours = Math.floor(remaining / (1000 * 60 * 60));
-                            timerDisp.innerText = `${hours}h 후에 변경 가능`;
-                        } else {
-                            timerDisp.style.display = 'none';
-                        }
+                        timerDisp.style.display = remaining > 0 ? 'block' : 'none';
+                        if(remaining > 0) timerDisp.innerText = `${Math.floor(remaining/3600000)}h 후 변경가능`;
                     }
                 });
             } else {
+                // 로그아웃 상태
+                loginSection.style.display = 'flex';
+                profileCard.style.display = 'none';
                 onlineDot.style.background = "#bbb";
-                userNameDisp.innerText = "로그인 하세요";
-                timerDisp.style.display = 'none';
-                profileCard.onclick = login;
             }
         });
     </script>
@@ -145,23 +152,21 @@
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             border: 1px solid rgba(255, 255, 255, 0.8);
         }
-        .card-panel:hover { transform: translateY(-5px); box-shadow: 0 20px 55px rgba(0, 0, 0, 0.15); }
+        .card-panel:hover { transform: translateY(-5px); }
 
         .top-nav { display: flex; justify-content: space-between; align-items: flex-start; padding: 30px; width: 100%; box-sizing: border-box; }
         
-        .profile-card { flex-direction: row; gap: 15px; padding: 12px 30px; border-radius: 60px; position: relative; }
-        .profile-card:hover #user-name { color: var(--battle-blue); text-decoration: underline; }
-        
+        /* 로그인 섹션 스타일 */
+        .login-box { flex-direction: row; gap: 10px; padding: 10px 20px; border-radius: 50px; }
+        .login-box input { border: none; outline: none; background: rgba(0,0,0,0.05); padding: 8px 15px; border-radius: 20px; font-family: var(--main-font); width: 120px; }
+        .auth-btn { background: var(--battle-blue); color: white; border: none; padding: 8px 15px; border-radius: 20px; cursor: pointer; font-weight: bold; }
+
+        .profile-card { flex-direction: row; gap: 15px; padding: 12px 30px; border-radius: 60px; position: relative; display: none; }
         .online-dot { width: 12px; height: 12px; background: #bbb; border-radius: 50%; position: absolute; left: 15px; top: 50%; transform: translateY(-50%); border: 2px solid white; }
 
         .top-right-group { display: flex; flex-direction: column; align-items: flex-end; gap: 15px; }
         .settings-btn { width: 60px; height: 60px; border-radius: 50%; }
-        .settings-btn i { color: #555; font-size: 32px; transition: transform 0.3s; }
-        .settings-btn:hover i { transform: rotate(90deg); }
-
-        .news-card { width: 340px; padding: 20px; align-items: flex-start; border-radius: 20px; }
-        .news-header { font-size: 1.2rem; color: #222; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
-        .news-content { font-size: 1rem; color: #555; font-weight: 400; line-height: 1.5; }
+        .news-card { width: 340px; padding: 20px; align-items: flex-start; border-radius: 20px; cursor: default; }
 
         .main-stage { flex: 1; display: flex; justify-content: center; align-items: center; }
         .monster-spot { width: 350px; height: 120px; background: rgba(0,0,0,0.04); border-radius: 50%; filter: blur(20px); }
@@ -169,27 +174,32 @@
         .bottom-container { position: absolute; bottom: 0; left: 0; width: 100%; display: flex; justify-content: space-between; align-items: flex-end; padding: 50px; box-sizing: border-box; }
         .left-menus { display: flex; gap: 20px; }
         .btn-small { width: 100px; height: 100px; }
-        .btn-small i { font-size: 40px; color: #444; margin-bottom: 5px; }
-        .btn-small span { font-size: 1.2rem; color: #333; }
+        .btn-small i { font-size: 40px; color: #444; }
 
         .btn-battle-huge {
             width: 520px; height: 130px; background-color: var(--battle-blue); 
             border: 8px solid #ffffff; border-radius: 70px;
             color: white; font-size: 58px; font-weight: 900;
             display: flex; justify-content: center; align-items: center;
-            cursor: pointer; text-shadow: -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000, 0px 4px 12px rgba(0,0,0,0.3);
+            cursor: pointer; text-shadow: 2px 2px 0 #000;
             box-shadow: 0 15px 50px rgba(0, 0, 0, 0.15); transition: all 0.2s;
         }
-        .btn-battle-huge:hover { transform: translateY(-5px) scale(1.03); background-color: #4fc3f7; }
     </style>
 </head>
 <body>
 
     <header class="top-nav">
+        <div class="card-panel login-box" id="login-section">
+            <input type="email" id="email-input" placeholder="이메일">
+            <input type="password" id="pw-input" placeholder="비밀번호">
+            <button class="auth-btn" onclick="handleAuth('login')">로그인</button>
+            <button class="auth-btn" style="background:#aaa;" onclick="handleAuth('signup')">가입</button>
+        </div>
+
         <div class="card-panel profile-card" id="profile-card">
             <div id="online-dot" class="online-dot"></div>
             <div style="display: flex; flex-direction: column; margin-left: 10px;">
-                <div id="user-name" style="font-size: 1.6rem; color: #111;">로그인 하세요</div>
+                <div id="user-name" style="font-size: 1.6rem; color: #111;">유저명</div>
                 <div id="nickname-timer" style="font-size: 0.75rem; color: #ff5252; display: none;"></div>
             </div>
             <div style="display: flex; gap: 15px; font-size: 1.2rem; margin-left: 10px;">
@@ -199,12 +209,10 @@
         </div>
 
         <div class="top-right-group">
-            <div class="card-panel settings-btn">
-                <i class="material-icons">settings</i>
-            </div>
+            <div class="card-panel settings-btn"><i class="material-icons">settings</i></div>
             <div class="card-panel news-card">
-                <div class="news-header"><i class="material-icons" style="font-size: 20px; color: #f39c12;">notifications</i> 새소식</div>
-                <div class="news-content">닉네임 변경 기능 추가!<br>24시간마다 새로운 이름으로!</div>
+                <div style="font-size: 1.2rem; margin-bottom: 8px;"><i class="material-icons" style="vertical-align: middle; color: #f39c12;">notifications</i> 새소식</div>
+                <div style="font-size: 1rem; color: #555;">이메일 로그인 시스템 도입 완료!</div>
             </div>
         </div>
     </header>
@@ -215,14 +223,8 @@
 
     <div class="bottom-container">
         <div class="left-menus">
-            <div class="card-panel btn-small">
-                <i class="material-icons">shopping_bag</i>
-                <span>상점</span>
-            </div>
-            <div class="card-panel btn-small">
-                <i class="material-icons">style</i>
-                <span>덱</span>
-            </div>
+            <div class="card-panel btn-small"><i class="material-icons">shopping_bag</i><span>상점</span></div>
+            <div class="card-panel btn-small"><i class="material-icons">style</i><span>덱</span></div>
         </div>
         <div class="btn-battle-huge">배틀 !</div>
     </div>
