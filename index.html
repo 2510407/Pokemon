@@ -9,7 +9,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getFirestore, doc, onSnapshot, setDoc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, doc, onSnapshot, setDoc, getDoc, updateDoc, runTransaction } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
        const firebaseConfig = {
   apiKey: "AIzaSyDb2Fh9FHOe7Is0BAoaVDojFJvs8XUgJcg", // 이제 유효한 키입니다!
@@ -60,22 +60,167 @@
             }
         };
 
+
+        // 카드 ID 배열인 users/{uid}.inventory를 그대로 사용한다.
+        const CARD = {
+          card_001:['피카츄','⚡',100,18,1], card_002:['파이리','🔥',105,20,2],
+          card_003:['꼬부기','💧',120,16,3], card_004:['이상해씨','🌿',115,17,4],
+          card_005:['이브이','✨',110,19,5], card_006:['고라파덕','💧',112,18,6],
+          card_007:['가디','🔥',108,21,7], card_008:['모래두지','🪨',125,16,8],
+          card_009:['식스테일','🔥',103,20,9], card_010:['디그다','🪨',98,22,10],
+          card_011:['발챙이','💧',117,17,11], card_012:['뚜벅쵸','🌿',113,18,12]
+        };
+        const pool = Object.keys(CARD);
+        let inventory = [], deck = [], selected = [], battle = null, unsubscribeUser = null, busy = false;
+        const el = id => document.getElementById(id);
+        const cardName = id => CARD[id]?.[0] || '알 수 없는 카드';
+        const cardMarkup = (id, label) => {
+          const c = CARD[id];
+          return c ? '<span class="card-emoji">'+c[1]+'</span><b>'+c[0]+'</b><small>HP '+c[2]+' · 공격 '+c[3]+'</small><em>'+label+'</em>' :
+            '<b>'+cardName(id)+'</b><small>미등록 카드 ID</small><em>선택 불가</em>';
+        };
+        function showScreen(name) {
+          ['shop-screen','deck-screen','battle-screen'].forEach(id => el(id).style.display = id === name ? 'block' : 'none');
+          el('lobby').style.display = name ? 'none' : 'block';
+        }
+        window.openShop = () => showScreen('shop-screen');
+        window.closeShop = () => showScreen('');
+        window.openDeck = () => {
+          if (!auth.currentUser) return alert('로그인이 필요합니다!');
+          selected = []; showScreen('deck-screen'); renderDeck();
+        };
+        window.closeDeck = () => showScreen('');
+        function validDeck(list, owned) {
+          if (list.length !== 6 || list.some(id => !CARD[id])) return false;
+          const count = {};
+          owned.forEach(id => count[id] = (count[id] || 0) + 1);
+          return list.every(id => --count[id] >= 0);
+        }
+        function reconcileDeck() {
+          if (!validDeck(deck, inventory)) { deck = []; selected = []; }
+          else selected = selected.filter(i => i >= 0 && i < 6);
+        }
+        function renderDeck() {
+          const counts = {};
+          deck.forEach(id => counts[id] = (counts[id] || 0) + 1);
+          const used = {};
+          el('inventory-list').innerHTML = inventory.map((id,i) => {
+            used[id] = (used[id] || 0) + 1;
+            const inDeck = used[id] <= (counts[id] || 0);
+            return '<button class="monster-card '+(inDeck?'picked':'')+'" '+(!CARD[id]?'disabled':'')+' onclick="toggleCard('+i+')">'+cardMarkup(id, inDeck?'덱에 포함':'덱에 추가')+'</button>';
+          }).join('') || '<p>보유 카드가 없습니다.</p>';
+          el('deck-list').innerHTML = deck.map((id,i) =>
+            '<button class="monster-card '+(selected.includes(i)?'picked':'')+'" onclick="toggleSelected('+i+')">'+cardMarkup(id, selected.includes(i)?'출전 선택됨':'출전 선택')+'</button>'
+          ).join('') || '<p>보유 카드에서 6장을 골라주세요.</p>';
+          el('deck-status').textContent = '덱 '+deck.length+'/6장 · 출전 '+selected.length+'/3마리';
+          el('save-deck').disabled = deck.length !== 6 || busy;
+          el('start-battle').disabled = !validDeck(deck,inventory) || selected.length !== 3 || busy;
+        }
+        window.toggleCard = i => {
+          const id = inventory[i]; if (!CARD[id]) return;
+          // 같은 ID의 복수 카드는 보유 수량까지만 추가한다.
+          const own = inventory.filter(x => x === id).length;
+          const picked = deck.filter(x => x === id).length;
+          if (picked < own) { if (deck.length >= 6) return alert('덱은 최대 6장입니다.'); deck.push(id); }
+          else { const at = deck.lastIndexOf(id); if (at >= 0) deck.splice(at,1); selected = []; }
+          renderDeck();
+        };
+        window.removeDeckCard = () => {
+          if (!selected.length) return alert('덱에서 제거할 카드를 선택하세요.');
+          selected.sort((a,b)=>b-a).forEach(i => deck.splice(i,1)); selected=[]; renderDeck();
+        };
+        window.toggleSelected = i => {
+          selected = selected.includes(i) ? selected.filter(x=>x!==i) :
+            selected.length < 3 ? [...selected,i] : selected;
+          renderDeck();
+        };
+        window.saveDeck = async () => {
+          if (!auth.currentUser || !validDeck(deck,inventory) || busy) return;
+          busy = true; renderDeck();
+          try {
+            const ref = doc(db,'users',auth.currentUser.uid);
+            const fresh = (await getDoc(ref)).data()?.inventory || [];
+            if (!validDeck(deck,fresh)) throw Error('보유 카드가 변경됐습니다. 다시 구성하세요.');
+            await updateDoc(ref,{ deck:[...deck] });
+            alert('덱이 저장됐습니다.');
+          } catch(e) { alert(e.message); } finally { busy=false; renderDeck(); }
+        };
+        window.openBattle = () => {
+          if (!auth.currentUser) return alert('로그인이 필요합니다!');
+          if (!validDeck(deck,inventory)) return window.openDeck();
+          selected=[]; showScreen('deck-screen'); renderDeck();
+          el('deck-hint').textContent = '출전할 카드 3장을 선택한 다음 배틀 시작을 누르세요.';
+        };
+        const fighter = id => ({id,hp:CARD[id][2],max:CARD[id][2]});
+        window.startBattle = () => {
+          if (!validDeck(deck,inventory) || selected.length !== 3) return;
+          const mine=selected.map(i=>fighter(deck[i]));
+          const theirs=Array.from({length:3},()=>fighter(pool[Math.floor(Math.random()*pool.length)]));
+          battle={mine,theirs,mi:0,ti:0,turn:1,ended:false,locked:false,logs:['연습 배틀 시작! 야생 트레이너가 등장했다.']};
+          showScreen('battle-screen'); renderBattle();
+        };
+        function current(side,idx) { return battle[side][battle[idx]]; }
+        function advance(side,idx) {
+          while (battle[idx] < battle[side].length && battle[side][battle[idx]].hp <= 0) battle[idx]++;
+        }
+        function strike(source,target,move,who) {
+          const stats=CARD[source.id], base=stats[3];
+          const amount = move===0 ? Math.max(1,base+Math.floor(Math.random()*9)-4) :
+            Math.max(1,Math.floor(base*1.45)+Math.floor(Math.random()*11)-5);
+          target.hp=Math.max(0,target.hp-amount);
+          battle.logs.push(who+'의 '+stats[0]+'! '+(move===0?'기본 공격':'강한 공격')+'으로 '+amount+' 피해.');
+          if(target.hp===0) battle.logs.push(CARD[target.id][0]+'이(가) 쓰러졌다!');
+        }
+        window.useMove = async move => {
+          if (!battle || battle.ended || battle.locked) return;
+          battle.locked=true;
+          let own=current('mine','mi'), foe=current('theirs','ti');
+          strike(own,foe,move,'내');
+          advance('theirs','ti');
+          if (battle.ti>=3) { battle.ended=true; battle.logs.push('승리!'); renderBattle(); return; }
+          if (foe.hp===0) battle.logs.push('상대가 '+cardName(current('theirs','ti').id)+'을(를) 내보냈다.');
+          // 다음 살아 있는 포켓몬으로 자동 교체
+          own=current('mine','mi'); foe=current('theirs','ti');
+          strike(foe,own,Math.random()<0.3?1:0,'상대');
+          advance('mine','mi');
+          if (battle.mi>=3) { battle.ended=true; battle.logs.push('패배!'); }
+          else if (own.hp===0) battle.logs.push('내 '+cardName(current('mine','mi').id)+'이(가) 나왔다.');
+          battle.turn++; battle.locked=false; renderBattle();
+        };
+        function renderBattle() {
+          if (!battle) return;
+          const unit=(side,idx) => {
+            const f=current(side,idx);
+            if (!f) return '<h2>전투 종료</h2>';
+            return '<div class="combat-monster"><span>'+CARD[f.id][1]+'</span><h2>'+cardName(f.id)+'</h2><p>HP '+f.hp+' / '+f.max+'</p><div class="hp-track"><div class="hp-fill" style="width:'+100*f.hp/f.max+'%;background:'+(f.hp/f.max<.3?'#f26464':'#62c792')+'"></div></div></div>';
+          };
+          el('foe-unit').innerHTML=unit('theirs','ti');
+          el('my-unit').innerHTML=unit('mine','mi');
+          el('turn-label').textContent=battle.ended?'배틀 종료':'턴 '+battle.turn;
+          el('battle-log').textContent=battle.logs.slice(-14).join('\n');
+          el('move-buttons').style.display=battle.ended?'none':'flex';
+          el('battle-result').textContent=battle.ended?battle.logs.at(-1):'';
+        }
+        window.returnLobby = () => { battle=null; selected=[]; showScreen(''); };
+
         // --- 상점 로직 ---
-        window.openShop = () => { shopScreen.style.display = 'block'; };
-        window.closeShop = () => { shopScreen.style.display = 'none'; };
 
         window.buyPack = async (price) => {
             const user = auth.currentUser;
-            if (!user) return alert("로그인이 필요합니다!");
-
-            const userRef = doc(db, "users", user.uid);
-            const docSnap = await getDoc(userRef);
-            const userData = docSnap.data();
-
-            if (userData.gem < price) return alert("다이아몬드가 부족합니다!");
-
-            await updateDoc(userRef, { gem: userData.gem - price });
-            alert("팩 구매 완료! 곧 카드가 추가됩니다.");
+            if (!user || busy) return alert("로그인이 필요합니다!");
+            busy = true;
+            try {
+                const ref = doc(db, "users", user.uid);
+                const result = await runTransaction(db, async tx => {
+                    const snap = await tx.get(ref);
+                    const data = snap.data();
+                    if (!data || (data.gem || 0) < price) throw Error("다이아몬드가 부족합니다!");
+                    const cards = Array.from({length:5},()=>pool[Math.floor(Math.random()*pool.length)]);
+                    tx.update(ref,{gem:data.gem-price, inventory:[...(Array.isArray(data.inventory)?data.inventory:[]),...cards]});
+                    return cards;
+                });
+                alert("새 카드: "+result.map(cardName).join(", "));
+            } catch(error) { alert(error.message); } finally { busy=false; }
         };
 
         // --- 닉네임 변경 ---
@@ -195,6 +340,30 @@
         .shop-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 30px; }
         .pack-card { padding: 30px; height: 400px; justify-content: space-around; }
         .close-btn { width: 60px; height: 60px; border-radius: 50%; font-size: 1.5rem; background: #fff; }
+
+        #deck-screen,#battle-screen {display:none;position:fixed;inset:0;z-index:1100;background:var(--bg-color);padding:24px;box-sizing:border-box;overflow:auto}
+        .screen-head {display:flex;align-items:center;justify-content:space-between;gap:16px;max-width:1200px;margin:0 auto 18px}
+        .screen-head h1 {margin:0;font-size:clamp(1.5rem,4vw,3rem)}
+        .deck-layout,.battle-layout {max-width:1200px;margin:auto;display:grid;grid-template-columns:1fr 1fr;gap:20px}
+        .game-panel {background:var(--panel-bg);border-radius:22px;padding:22px;box-shadow:var(--strong-shadow);min-width:0}
+        .game-panel h2 {margin:0 0 12px}
+        .card-grid {display:grid;grid-template-columns:repeat(auto-fill,minmax(135px,1fr));gap:10px;max-height:50vh;overflow:auto}
+        .monster-card {font:inherit;background:#fff;border:3px solid #dfedf6;border-radius:18px;min-height:142px;padding:10px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:space-around}
+        .monster-card.picked {border-color:#63bde9;background:#e4f5ff}
+        .monster-card small {color:#547083}.monster-card em {font-style:normal;font-size:.8rem;color:#327ba4}.card-emoji {font-size:2.5rem}
+        .game-actions {display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+        .game-actions button,.move-button {font:inherit;border:0;background:#81d4fa;color:#163748;border-radius:14px;padding:12px 18px;cursor:pointer;font-weight:bold}
+        .game-actions button:disabled {opacity:.45;cursor:not-allowed}
+        .battle-layout {grid-template-columns:2fr 1fr}
+        .arena {min-height:55vh;display:flex;flex-direction:column;justify-content:space-between;background:linear-gradient(#c8edff,#f4fbff 58%,#def3db)}
+        .combat-monster {max-width:370px;background:#ffffffde;border-radius:20px;padding:18px;box-shadow:0 8px 25px #0002}
+        .combat-monster span {font-size:4rem}.combat-monster h2,.combat-monster p {margin:4px 0}
+        #foe-unit {align-self:flex-end;width:min(85%,370px)}#my-unit {align-self:flex-start;width:min(85%,370px)}
+        .hp-track {height:18px;background:#dce4e9;border-radius:10px;overflow:hidden}.hp-fill {height:100%;transition:width .3s}
+        #battle-log {white-space:pre-wrap;line-height:1.6;max-height:40vh;overflow:auto;background:#eff7fc;padding:12px;border-radius:12px}
+        #move-buttons {display:flex;gap:10px;flex-wrap:wrap}
+        #battle-result {font-size:2rem;color:#267eaf}
+        @media(max-width:750px){.deck-layout,.battle-layout{grid-template-columns:1fr}.bottom-container{padding:16px}.btn-battle-huge{width:40vw;height:80px;font-size:1.8rem}.btn-small{width:70px;height:75px}.arena{min-height:380px}}
     </style>
 </head>
 <body>
@@ -218,6 +387,24 @@
         </div>
     </section>
 
+    <section id="deck-screen" aria-label="덱 구성">
+      <div class="screen-head"><h1>포켓몬 덱</h1><button class="auth-btn" onclick="closeDeck()">로비로</button></div>
+      <div class="deck-layout">
+        <div class="game-panel"><h2>보유 카드</h2><p>카드를 누르면 덱에 추가됩니다. 같은 카드도 보유한 수만큼 사용할 수 있습니다.</p><div id="inventory-list" class="card-grid"></div></div>
+        <div class="game-panel"><h2>내 덱</h2><p id="deck-status"></p><p id="deck-hint">덱 6장을 구성하고 출전할 3마리를 선택하세요.</p><div id="deck-list" class="card-grid"></div>
+          <div class="game-actions"><button onclick="removeDeckCard()">선택 카드 제거</button><button id="save-deck" onclick="saveDeck()">덱 저장</button><button id="start-battle" onclick="startBattle()">배틀 시작</button></div>
+        </div>
+      </div>
+    </section>
+    <section id="battle-screen" aria-label="배틀">
+      <div class="screen-head"><h1>배틀 ! <small id="turn-label"></small></h1><button class="auth-btn" onclick="returnLobby()">로비 복귀</button></div>
+      <div class="battle-layout"><div class="game-panel arena"><div id="foe-unit"></div><div id="my-unit"></div></div>
+        <div class="game-panel"><h2>턴 로그</h2><div id="battle-log" role="log" aria-live="polite"></div><h2 id="battle-result"></h2>
+          <div id="move-buttons" class="game-actions"><button class="move-button" onclick="useMove(0)">기본 공격</button><button class="move-button" onclick="useMove(1)">강한 공격</button></div>
+        </div>
+      </div>
+    </section>
+    <div id="lobby">
     <header class="top-nav">
         <div class="card-panel login-box" id="login-section">
             <input type="email" id="email-input" placeholder="이메일">
@@ -256,12 +443,13 @@
                 <i class="material-icons">shopping_bag</i>
                 <span style="font-size: 1.2rem;">상점</span>
             </div>
-            <div class="card-panel btn-small">
+            <div class="card-panel btn-small" onclick="openDeck()">
                 <i class="material-icons">style</i>
                 <span style="font-size: 1.2rem;">덱</span>
             </div>
         </div>
-        <div class="btn-battle-huge">배틀 !</div>
+        <div class="btn-battle-huge" onclick="openBattle()">배틀 !</div>
+    </div>
     </div>
 
 </body>
